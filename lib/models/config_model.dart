@@ -181,15 +181,39 @@ class AlarmConfig {
   }
 }
 
+class Playlist {
+  String name;
+  List<int> sc;
+
+  Playlist({required this.name, required this.sc});
+
+  factory Playlist.fromJson(Map<String, dynamic> json) {
+    return Playlist(
+      name: json['name'] ?? '',
+      sc: List<int>.from(json['SC'] ?? json['tracks'] ?? []),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'name': name, 'SC': sc};
+  }
+
+  Playlist copyWith({String? name, List<int>? sc}) {
+    return Playlist(name: name ?? this.name, sc: sc ?? List<int>.from(this.sc));
+  }
+}
+
 class Config {
   List<AlarmConfig> alarmConfig;
   List<dynamic> silentHours; // Can contain range lists like [start, end]
   List<SongMasterItem> songMaster;
+  List<Playlist> playlists;
 
   Config({
     required this.alarmConfig,
     required this.silentHours,
     required this.songMaster,
+    required this.playlists,
   });
 
   factory Config.fromJson(Map<String, dynamic> json) {
@@ -201,6 +225,9 @@ class Config {
       songMaster: (json['SongMaster'] as List? ?? [])
           .map((e) => SongMasterItem.fromList(e))
           .toList(),
+      playlists: (json['Playlists'] as List? ?? [])
+          .map((e) => Playlist.fromJson(e))
+          .toList(),
     );
   }
 
@@ -209,6 +236,7 @@ class Config {
       'AlarmConfig': alarmConfig.map((e) => e.toJson()).toList(),
       'silentHours': silentHours,
       'SongMaster': songMaster.map((e) => e.toList()).toList(),
+      'Playlists': playlists.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -216,11 +244,13 @@ class Config {
     List<AlarmConfig>? alarmConfig,
     List<dynamic>? silentHours,
     List<SongMasterItem>? songMaster,
+    List<Playlist>? playlists,
   }) {
     return Config(
       alarmConfig: alarmConfig ?? this.alarmConfig,
       silentHours: silentHours ?? this.silentHours,
       songMaster: songMaster ?? this.songMaster,
+      playlists: playlists ?? this.playlists,
     );
   }
 }

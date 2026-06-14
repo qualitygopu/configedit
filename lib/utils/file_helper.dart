@@ -6,5 +6,6 @@ class FileHelper {
   static final _impl = FileHelperImpl();
 
   static Future<String?> loadFile() => _impl.loadFile();
-  static Future<void> saveFile(String content, String fileName) => _impl.saveFile(content, fileName);
+  static Future<void> saveFile(String content, String fileName) =>
+      _impl.saveFile(content, fileName);
 }

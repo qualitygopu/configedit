@@ -18,8 +18,10 @@ class _RawJsonScreenState extends State<RawJsonScreen> {
   @override
   void initState() {
     super.initState();
-    jsonEditorController = TextEditingController(text: controller.rawJson.value);
-    
+    jsonEditorController = TextEditingController(
+      text: controller.rawJson.value,
+    );
+
     // Sync text editor with state changes from controller
     jsonWorker = ever(controller.rawJson, (val) {
       if (jsonEditorController.text != val) {
@@ -50,18 +52,29 @@ class _RawJsonScreenState extends State<RawJsonScreen> {
                 children: [
                   Text(
                     "Raw JSON Configuration Editor",
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 22, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     "Directly modify the config JSON. Invalid JSON syntax will display errors.",
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 13),
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.6),
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
               ElevatedButton.icon(
                 onPressed: () {
-                  final val = controller.updateFromRawText(jsonEditorController.text);
+                  final val = controller.updateFromRawText(
+                    jsonEditorController.text,
+                  );
                   if (val) {
                     Get.snackbar(
                       "Success",
@@ -85,14 +98,19 @@ class _RawJsonScreenState extends State<RawJsonScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF10B981),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-              )
+              ),
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Error alert
           Obx(() {
             if (controller.errorMessage.value.isNotEmpty) {
@@ -112,7 +130,11 @@ class _RawJsonScreenState extends State<RawJsonScreen> {
                     Expanded(
                       child: Text(
                         controller.errorMessage.value,
-                        style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'monospace'),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          fontFamily: 'monospace',
+                        ),
                       ),
                     ),
                   ],
@@ -130,7 +152,11 @@ class _RawJsonScreenState extends State<RawJsonScreen> {
                     ? Colors.black.withOpacity(0.3)
                     : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.08)),
+                border: Border.all(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.08),
+                ),
               ),
               padding: const EdgeInsets.all(16),
               child: TextField(

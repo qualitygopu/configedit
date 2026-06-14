@@ -18,7 +18,6 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
     controller.addSilentHour([startHour, endHour]);
   }
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -43,21 +42,26 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
                   const SizedBox(height: 4),
                   Text(
                     "Configure time ranges or specific hours during which announcements are muted",
-                    style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 13),
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Form to add a new silent hour range
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: theme.colorScheme.onSurface.withOpacity(0.01),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
+              border: Border.all(
+                color: theme.colorScheme.onSurface.withOpacity(0.08),
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -68,7 +72,11 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
                     children: [
                       Text(
                         "Start Hour (0-23)",
-                        style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<int>(
@@ -77,12 +85,25 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
                         style: TextStyle(color: theme.colorScheme.onSurface),
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: theme.colorScheme.onSurface.withOpacity(0.03),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                          fillColor: theme.colorScheme.onSurface.withOpacity(
+                            0.03,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
                         ),
-                        items: List.generate(24, (i) => DropdownMenuItem(value: i, child: Text("$i:00"))),
-                        onChanged: (val) => setState(() => startHour = val ?? 22),
+                        items: List.generate(
+                          24,
+                          (i) =>
+                              DropdownMenuItem(value: i, child: Text("$i:00")),
+                        ),
+                        onChanged: (val) =>
+                            setState(() => startHour = val ?? 22),
                       ),
                     ],
                   ),
@@ -94,7 +115,11 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
                     children: [
                       Text(
                         "End Hour (0-23)",
-                        style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<int>(
@@ -103,11 +128,23 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
                         style: TextStyle(color: theme.colorScheme.onSurface),
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: theme.colorScheme.onSurface.withOpacity(0.03),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                          fillColor: theme.colorScheme.onSurface.withOpacity(
+                            0.03,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
                         ),
-                        items: List.generate(24, (i) => DropdownMenuItem(value: i, child: Text("$i:00"))),
+                        items: List.generate(
+                          24,
+                          (i) =>
+                              DropdownMenuItem(value: i, child: Text("$i:00")),
+                        ),
                         onChanged: (val) => setState(() => endHour = val ?? 6),
                       ),
                     ],
@@ -121,10 +158,15 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6366F1),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 18,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -138,15 +180,33 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
               decoration: BoxDecoration(
                 color: theme.colorScheme.onSurface.withOpacity(0.01),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
+                border: Border.all(
+                  color: theme.colorScheme.onSurface.withOpacity(0.08),
+                ),
               ),
               child: Column(
                 children: [
-                  Icon(Icons.volume_up, color: theme.colorScheme.onSurface.withOpacity(0.24), size: 48),
+                  Icon(
+                    Icons.volume_up,
+                    color: theme.colorScheme.onSurface.withOpacity(0.24),
+                    size: 48,
+                  ),
                   const SizedBox(height: 12),
-                  Text("No silent hours defined", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 15)),
+                  Text(
+                    "No silent hours defined",
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      fontSize: 15,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text("Announcements will run 24/7 based on alarm rules", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.38), fontSize: 12)),
+                  Text(
+                    "Announcements will run 24/7 based on alarm rules",
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.38),
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             )
@@ -172,11 +232,16 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
                 }
 
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.onSurface.withOpacity(0.03),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
+                    border: Border.all(
+                      color: theme.colorScheme.onSurface.withOpacity(0.08),
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -188,24 +253,41 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.volume_off, color: Colors.redAccent, size: 16),
+                                const Icon(
+                                  Icons.volume_off,
+                                  color: Colors.redAccent,
+                                  size: 16,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   isRange ? "Hour Range" : "Specific Hour",
-                                  style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.38), fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.38),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 4),
                             Text(
                               title,
-                              style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 13, fontWeight: FontWeight.bold),
-                            )
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.redAccent,
+                          size: 18,
+                        ),
                         onPressed: () => controller.deleteSilentHour(index),
                       ),
                     ],

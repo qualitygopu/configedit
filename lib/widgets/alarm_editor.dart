@@ -15,14 +15,14 @@ class AlarmEditorDialog extends StatefulWidget {
 
 class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
   final ConfigController controller = Get.find<ConfigController>();
-  
+
   late TextEditingController titleController;
   late TextEditingController idController;
   late bool stateValue;
   late Set<int> selectedHours;
   late Set<int> selectedWeekdays;
   late List<int> selectedSC;
-  
+
   int startMin = 0;
   int endMin = 0;
   int startDay = 1;
@@ -38,31 +38,31 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
     titleController = TextEditingController(text: alarm?.tit ?? '');
     idController = TextEditingController(text: alarm?.id ?? '');
     stateValue = alarm?.state ?? true;
-    
+
     // Parse times
     if (alarm != null) {
       selectedHours = rangesToHours(alarm.hourRanges);
       selectedWeekdays = alarm.weekdays.toSet();
       selectedSC = List<int>.from(alarm.sc);
-      
+
       final mins = alarm.minutes;
       if (mins.length >= 2) {
         startMin = mins[0];
         endMin = mins[1];
       }
-      
+
       final dom = alarm.dayOfMonthRanges;
       if (dom.isNotEmpty && dom[0].length >= 2) {
         startDay = dom[0][0];
         endDay = dom[0][1];
       }
-      
+
       final mos = alarm.monthRanges;
       if (mos.isNotEmpty && mos[0].length >= 2) {
         startMonth = mos[0][0];
         endMonth = mos[0][1];
       }
-      
+
       final ext = alarm.extra;
       if (ext.isNotEmpty) {
         extraVal = ext[0];
@@ -117,7 +117,9 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
 
   void save() {
     if (titleController.text.trim().isEmpty) {
-      Get.snackbar("Required", "Title is required", 
+      Get.snackbar(
+        "Required",
+        "Title is required",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
@@ -128,10 +130,14 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
     final newTim = [
       [startMin, endMin],
       hoursToRanges(selectedHours),
-      [[startDay, endDay]],
-      [[startMonth, endMonth]],
+      [
+        [startDay, endDay],
+      ],
+      [
+        [startMonth, endMonth],
+      ],
       selectedWeekdays.toList()..sort(),
-      [extraVal]
+      [extraVal],
     ];
 
     final newAlarm = AlarmConfig(
@@ -173,13 +179,15 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
         decoration: BoxDecoration(
           gradient: bgGradient,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
+          border: Border.all(
+            color: theme.colorScheme.onSurface.withOpacity(0.08),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(isDark ? 0.5 : 0.15),
               blurRadius: 32,
               offset: const Offset(0, 16),
-            )
+            ),
           ],
         ),
         child: Column(
@@ -191,7 +199,9 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    widget.alarm != null ? "Edit Alarm Configuration" : "New Alarm Configuration",
+                    widget.alarm != null
+                        ? "Edit Alarm Configuration"
+                        : "New Alarm Configuration",
                     style: theme.textTheme.headlineSmall?.copyWith(
                       color: theme.colorScheme.onSurface,
                       fontWeight: FontWeight.bold,
@@ -200,12 +210,18 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                   ),
                   IconButton(
                     onPressed: () => Get.back(),
-                    icon: Icon(Icons.close, color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                  )
+                    icon: Icon(
+                      Icons.close,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
                 ],
               ),
             ),
-            Divider(color: theme.colorScheme.onSurface.withOpacity(0.08), height: 1),
+            Divider(
+              color: theme.colorScheme.onSurface.withOpacity(0.08),
+              height: 1,
+            ),
 
             // Scrollable Content
             Expanded(
@@ -240,14 +256,21 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                           children: [
                             Text(
                               "State",
-                              style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontSize: 13, fontWeight: FontWeight.w500),
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface.withOpacity(
+                                  0.7,
+                                ),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             Switch(
                               value: stateValue,
                               activeColor: const Color(0xFF10B981),
                               inactiveThumbColor: Colors.grey,
-                              inactiveTrackColor: theme.colorScheme.onSurface.withOpacity(0.15),
+                              inactiveTrackColor: theme.colorScheme.onSurface
+                                  .withOpacity(0.15),
                               onChanged: (val) {
                                 setState(() {
                                   stateValue = val;
@@ -263,7 +286,11 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                     // Weekdays selection
                     Text(
                       "Days of the Week",
-                      style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     _buildWeekdaySelector(),
@@ -275,7 +302,11 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                       children: [
                         Text(
                           "Hours Visual Scheduler (Click to toggle hours)",
-                          style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         TextButton(
                           onPressed: () {
@@ -283,15 +314,20 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                               if (selectedHours.length == 24) {
                                 selectedHours.clear();
                               } else {
-                                selectedHours = List.generate(24, (i) => i).toSet();
+                                selectedHours = List.generate(
+                                  24,
+                                  (i) => i,
+                                ).toSet();
                               }
                             });
                           },
                           child: Text(
-                            selectedHours.length == 24 ? "Deselect All" : "Select All",
+                            selectedHours.length == 24
+                                ? "Deselect All"
+                                : "Select All",
                             style: TextStyle(color: theme.colorScheme.primary),
                           ),
-                        )
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -347,7 +383,8 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                             value: startMonth,
                             min: 1,
                             max: 12,
-                            onChanged: (val) => setState(() => startMonth = val),
+                            onChanged: (val) =>
+                                setState(() => startMonth = val),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -373,7 +410,10 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                           children: [
                             Text(
                               "Announcement Sequence (SC)",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             Text(
                               "Drag items to reorder the announcement playback sequence",
@@ -381,38 +421,116 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                             ),
                           ],
                         ),
-                        PopupMenuButton<int>(
-                          icon: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF6366F1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.add, color: Colors.white, size: 18),
-                                SizedBox(width: 4),
-                                Text("Add Sound", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ),
-                          tooltip: "Add Sound to Playback Sequence",
-                          itemBuilder: (context) {
-                            return controller.songMaster.asMap().entries.map((entry) {
-                              final idx = entry.key;
-                              final item = entry.value;
-                              return PopupMenuItem<int>(
-                                value: idx,
-                                child: Text("${item.name} (${item.code})"),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Obx(() {
+                              if (controller.playlists.isEmpty)
+                                return const SizedBox.shrink();
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: PopupMenuButton<Playlist>(
+                                  icon: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.secondary,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.playlist_play,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          "Load Playlist",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  tooltip:
+                                      "Load Track Sequence from Saved Playlist",
+                                  itemBuilder: (context) {
+                                    return controller.playlists.map((playlist) {
+                                      return PopupMenuItem<Playlist>(
+                                        value: playlist,
+                                        child: Text(playlist.name),
+                                      );
+                                    }).toList();
+                                  },
+                                  onSelected: (playlist) {
+                                    setState(() {
+                                      selectedSC = List<int>.from(playlist.sc);
+                                    });
+                                  },
+                                ),
                               );
-                            }).toList();
-                          },
-                          onSelected: (idx) {
-                            setState(() {
-                              selectedSC.add(idx);
-                            });
-                          },
+                            }),
+                            PopupMenuButton<int>(
+                              icon: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF6366F1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.add,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      "Add Sound",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              tooltip: "Add Sound to Playback Sequence",
+                              itemBuilder: (context) {
+                                return controller.songMaster
+                                    .asMap()
+                                    .entries
+                                    .map((entry) {
+                                      final idx = entry.key;
+                                      final item = entry.value;
+                                      return PopupMenuItem<int>(
+                                        value: idx,
+                                        child: Text(
+                                          "${item.name} (${item.code})",
+                                        ),
+                                      );
+                                    })
+                                    .toList();
+                              },
+                              onSelected: (idx) {
+                                setState(() {
+                                  selectedSC.add(idx);
+                                });
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -422,7 +540,10 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                 ),
               ),
             ),
-            Divider(color: theme.colorScheme.onSurface.withOpacity(0.08), height: 1),
+            Divider(
+              color: theme.colorScheme.onSurface.withOpacity(0.08),
+              height: 1,
+            ),
 
             // Footer Actions
             Padding(
@@ -433,10 +554,21 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                   OutlinedButton(
                     onPressed: () => Get.back(),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: theme.brightness == Brightness.dark ? Colors.white70 : const Color(0xFF475569),
-                      side: BorderSide(color: theme.brightness == Brightness.dark ? Colors.white30 : const Color(0xFFCBD5E1)),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      foregroundColor: theme.brightness == Brightness.dark
+                          ? Colors.white70
+                          : const Color(0xFF475569),
+                      side: BorderSide(
+                        color: theme.brightness == Brightness.dark
+                            ? Colors.white30
+                            : const Color(0xFFCBD5E1),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: const Text("Cancel"),
                   ),
@@ -446,11 +578,18 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.colorScheme.primary,
                       foregroundColor: theme.colorScheme.onPrimary,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       elevation: 0,
                     ),
-                    child: Text(widget.alarm != null ? "Save Changes" : "Create Alarm"),
+                    child: Text(
+                      widget.alarm != null ? "Save Changes" : "Create Alarm",
+                    ),
                   ),
                 ],
               ),
@@ -472,7 +611,11 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
       children: [
         Text(
           label,
-          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontSize: 13, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         const SizedBox(height: 8),
         TextField(
@@ -480,14 +623,19 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
           style: TextStyle(color: theme.colorScheme.onSurface),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.3)),
+            hintStyle: TextStyle(
+              color: theme.colorScheme.onSurface.withOpacity(0.3),
+            ),
             filled: true,
             fillColor: theme.colorScheme.onSurface.withOpacity(0.05),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
           ),
         ),
       ],
@@ -507,7 +655,11 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
       children: [
         Text(
           label,
-          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         const SizedBox(height: 6),
         Container(
@@ -521,13 +673,20 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
             children: [
               Text(
                 value.toString(),
-                style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: Icon(Icons.arrow_drop_up, color: theme.colorScheme.onSurface.withOpacity(0.7), size: 16),
+                    icon: Icon(
+                      Icons.arrow_drop_up,
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      size: 16,
+                    ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: () {
@@ -535,7 +694,11 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                     },
                   ),
                   IconButton(
-                    icon: Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurface.withOpacity(0.7), size: 16),
+                    icon: Icon(
+                      Icons.arrow_drop_down,
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      size: 16,
+                    ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: () {
@@ -543,10 +706,10 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                     },
                   ),
                 ],
-              )
+              ),
             ],
           ),
-        )
+        ),
       ],
     );
   }
@@ -576,18 +739,26 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? theme.colorScheme.primary.withOpacity(0.2) : theme.colorScheme.onSurface.withOpacity(0.03),
+                  color: isSelected
+                      ? theme.colorScheme.primary.withOpacity(0.2)
+                      : theme.colorScheme.onSurface.withOpacity(0.03),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.08),
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface.withOpacity(0.08),
                   ),
                 ),
                 child: Center(
                   child: Text(
                     days[index],
                     style: TextStyle(
-                      color: isSelected ? theme.colorScheme.onSurface : theme.colorScheme.onSurface.withOpacity(0.6),
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected
+                          ? theme.colorScheme.onSurface
+                          : theme.colorScheme.onSurface.withOpacity(0.6),
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -627,17 +798,23 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
           borderRadius: BorderRadius.circular(8),
           child: Container(
             decoration: BoxDecoration(
-              color: isSelected ? theme.colorScheme.secondary.withOpacity(0.2) : theme.colorScheme.onSurface.withOpacity(0.03),
+              color: isSelected
+                  ? theme.colorScheme.secondary.withOpacity(0.2)
+                  : theme.colorScheme.onSurface.withOpacity(0.03),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isSelected ? theme.colorScheme.secondary : theme.colorScheme.onSurface.withOpacity(0.08),
+                color: isSelected
+                    ? theme.colorScheme.secondary
+                    : theme.colorScheme.onSurface.withOpacity(0.08),
               ),
             ),
             child: Center(
               child: Text(
                 hourStr,
                 style: TextStyle(
-                  color: isSelected ? theme.colorScheme.onSurface : theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: isSelected
+                      ? theme.colorScheme.onSurface
+                      : theme.colorScheme.onSurface.withOpacity(0.6),
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   fontSize: 12,
                 ),
@@ -658,12 +835,16 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
         decoration: BoxDecoration(
           color: theme.colorScheme.onSurface.withOpacity(0.01),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
+          border: Border.all(
+            color: theme.colorScheme.onSurface.withOpacity(0.08),
+          ),
         ),
         child: Center(
           child: Text(
             "No announcements configured. Add sounds using the button above.",
-            style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.38)),
+            style: TextStyle(
+              color: theme.colorScheme.onSurface.withOpacity(0.38),
+            ),
           ),
         ),
       );
@@ -674,7 +855,9 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
       decoration: BoxDecoration(
         color: theme.colorScheme.onSurface.withOpacity(0.01),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withOpacity(0.08),
+        ),
       ),
       child: ReorderableListView(
         scrollDirection: Axis.horizontal,
@@ -691,8 +874,14 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
           // Check bounds in case master changed
           final item = (smIndex >= 0 && smIndex < controller.songMaster.length)
               ? controller.songMaster[smIndex]
-              : SongMasterItem(id: smIndex, code: 'ERR', category: 'ERR', source: 'ERR', name: 'Unknown');
-          
+              : SongMasterItem(
+                  id: smIndex,
+                  code: 'ERR',
+                  category: 'ERR',
+                  source: 'ERR',
+                  name: 'Unknown',
+                );
+
           return Container(
             key: ValueKey("sc_$idx"),
             width: 140,
@@ -701,7 +890,9 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
             decoration: BoxDecoration(
               color: theme.cardTheme.color,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
+              border: Border.all(
+                color: theme.colorScheme.onSurface.withOpacity(0.08),
+              ),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -711,18 +902,31 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
-                        color: item.source == 'SYS' ? const Color(0xFF6366F1) : const Color(0xFFF59E0B),
+                        color: item.source == 'SYS'
+                            ? const Color(0xFF6366F1)
+                            : const Color(0xFFF59E0B),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         item.source,
-                        style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close, color: theme.colorScheme.onSurface.withOpacity(0.3), size: 16),
+                      icon: Icon(
+                        Icons.close,
+                        color: theme.colorScheme.onSurface.withOpacity(0.3),
+                        size: 16,
+                      ),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () {
@@ -730,7 +934,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                           selectedSC.removeAt(idx);
                         });
                       },
-                    )
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -743,17 +947,28 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                         item.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 12, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         item.category,
-                        style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.38), fontSize: 10),
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface.withOpacity(0.38),
+                          fontSize: 10,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.drag_handle, color: theme.colorScheme.onSurface.withOpacity(0.3), size: 18),
+                Icon(
+                  Icons.drag_handle,
+                  color: theme.colorScheme.onSurface.withOpacity(0.3),
+                  size: 18,
+                ),
               ],
             ),
           );

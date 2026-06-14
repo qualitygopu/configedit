@@ -78,10 +78,7 @@ class MyApp extends StatelessWidget {
         ),
         elevation: 4,
       ),
-      dividerTheme: const DividerThemeData(
-        color: Colors.white10,
-        thickness: 1,
-      ),
+      dividerTheme: const DividerThemeData(color: Colors.white10, thickness: 1),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white.withOpacity(0.03),
@@ -106,13 +103,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ConfigController controller = Get.find<ConfigController>();
-    return Obx(() => GetMaterialApp(
-      title: 'ConfigEditor',
-      debugShowCheckedModeBanner: false,
-      themeMode: controller.themeMode.value,
-      theme: _buildLightTheme(),
-      darkTheme: _buildDarkTheme(),
-      home: const MainShell(),
-    ));
+    return Obx(
+      () => GetMaterialApp(
+        title: 'ConfigEditor',
+        debugShowCheckedModeBanner: false,
+        themeMode: controller.themeMode.value,
+        theme: _buildLightTheme(),
+        darkTheme: _buildDarkTheme(),
+        home: const MainShell(),
+      ),
+    );
   }
 }

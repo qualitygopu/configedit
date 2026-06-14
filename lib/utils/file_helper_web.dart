@@ -4,7 +4,7 @@ import 'dart:html' as html;
 class FileHelperImpl {
   Future<String?> loadFile() async {
     final uploadInput = html.InputElement(type: 'file');
-    uploadInput.accept = '.json';
+    uploadInput.accept = '.qtr,.json';
     uploadInput.click();
     await uploadInput.onChange.first;
     if (uploadInput.files?.isEmpty ?? true) return null;

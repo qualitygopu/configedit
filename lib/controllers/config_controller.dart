@@ -10,6 +10,7 @@ class ConfigController extends GetxController {
   final RxList<AlarmConfig> alarms = <AlarmConfig>[].obs;
   final RxList<dynamic> silentHours = <dynamic>[].obs;
   final RxList<SongMasterItem> songMaster = <SongMasterItem>[].obs;
+  final RxList<Playlist> playlists = <Playlist>[].obs;
   final RxString rawJson = "".obs;
   final RxString errorMessage = "".obs;
   final RxBool isModified = false.obs;
@@ -24,7 +25,8 @@ class ConfigController extends GetxController {
     }
   }
 
-  static const String defaultJson = r'''{"AlarmConfig":[{"tit":"subrabatham","id":null,"state":true,"tim":[[0,0],[[5,5]],[[1,31]],[[1,12]],[1,2,3,4,5,6,7],[0]],"SC":[0,1,2,3,4,5,12],"type":"time"},{"tit":"time with Panchagam","id":null,"state":true,"tim":[[0,0],[[6,6],[8,8],[10,10]],[[1,31]],[[1,12]],[1,2,3,4,5,6,7],[0]],"SC":[0,1,2,3,4,5,6,7,8,9,10],"type":"time"},{"tit":"time with song","id":"time795","state":true,"tim":[[0,0],[[6,8],[17,19]],[[1,31]],[[1,12]],[1,2,3,4,5,6,7],[0]],"SC":[0,1,2,3,4,5,10],"type":"time"},{"tit":"time with quotes","id":null,"state":true,"tim":[[0,0],[[6,22]],[[1,31]],[[1,12]],[1,2,3,4,5,6,7],[0]],"SC":[0,1,2,3,4,5,11],"type":"time"}],"silentHours":[],"SongMaster":[[24,"hr","SS","SYS","மந்திரம்"],[24,"hr","VO","SYS","ஆலயம் பெயர்"],[24,"hr","HR/HWB","SYS","மணி"],[12,"mo","MO","SYS","ஆங்கில தேதி"],[31,"dt","DT","SYS","ஆங்கில தேதி"],[7,"dw","DW","SYS","ஆங்கில தேதி"],[366,"td","PN","SYS","தமிழ் தேதி"],[366,"tn","PN","SYS","திதி நட்சத்திரம்"],[7,"dw","NN","SYS","நல்லநேரம்"],[100,"sd","PN","SYS","விரத தினம்"],[100,"LP","SN1","CUS","பாடல் 1"],[762,"LP","QU","CUS","Quotes"],[12,"Vinayagar Suprabatham","SP","CUS","Subrapatham"]]}''';
+  static const String defaultJson =
+      r'''{"AlarmConfig":[{"tit":"subrabatham","id":null,"state":true,"tim":[[0,0],[[5,5]],[[1,31]],[[1,12]],[1,2,3,4,5,6,7],[0]],"SC":[0,1,2,3,4,5,12],"type":"time"},{"tit":"time with Panchagam","id":null,"state":true,"tim":[[0,0],[[6,6],[8,8],[10,10]],[[1,31]],[[1,12]],[1,2,3,4,5,6,7],[0]],"SC":[0,1,2,3,4,5,6,7,8,9,10],"type":"time"},{"tit":"time with song","id":"time795","state":true,"tim":[[0,0],[[6,8],[17,19]],[[1,31]],[[1,12]],[1,2,3,4,5,6,7],[0]],"SC":[0,1,2,3,4,5,10],"type":"time"},{"tit":"time with quotes","id":null,"state":true,"tim":[[0,0],[[6,22]],[[1,31]],[[1,12]],[1,2,3,4,5,6,7],[0]],"SC":[0,1,2,3,4,5,11],"type":"time"}],"silentHours":[],"SongMaster":[[24,"hr","SS","SYS","மந்திரம்"],[24,"hr","VO","SYS","ஆலயம் பெயர்"],[24,"hr","HR/HWB","SYS","மணி"],[12,"mo","MO","SYS","ஆங்கில தேதி"],[31,"dt","DT","SYS","ஆங்கில தேதி"],[7,"dw","DW","SYS","ஆங்கில தேதி"],[366,"td","PN","SYS","தமிழ் தேதி"],[366,"tn","PN","SYS","திதி நட்சத்திரம்"],[7,"dw","NN","SYS","நல்லநேரம்"],[100,"sd","PN","SYS","விரத தினம்"],[100,"LP","SN1","CUS","பாடல் 1"],[762,"LP","QU","CUS","Quotes"],[12,"Vinayagar Suprabatham","SP","CUS","Subrapatham"]],"Playlists":[]}''';
 
   @override
   void onInit() {
@@ -32,20 +34,32 @@ class ConfigController extends GetxController {
     loadDefault();
   }
 
-  // Load from a raw JSON string
-  bool loadConfig(String jsonString) {
+  // Load from a raw JSON string (supporting both raw JSON and base64 encoded JSON)
+  bool loadConfig(String content) {
     try {
+      String jsonString = content.trim();
+      // Auto-detect base64 encoding by checking if it does not start with '{'
+      if (jsonString.isNotEmpty && !jsonString.startsWith('{')) {
+        try {
+          final decodedBytes = base64.decode(jsonString);
+          jsonString = utf8.decode(decodedBytes);
+        } catch (_) {
+          // Fall back to original content if decoding fails
+        }
+      }
+
       final decoded = jsonDecode(jsonString);
       if (decoded is! Map<String, dynamic>) {
         throw const FormatException("Root JSON must be an object");
       }
       final parsedConfig = Config.fromJson(decoded);
-      
+
       config.value = parsedConfig;
       alarms.assignAll(parsedConfig.alarmConfig);
       silentHours.assignAll(parsedConfig.silentHours);
       songMaster.assignAll(parsedConfig.songMaster);
-      
+      playlists.assignAll(parsedConfig.playlists);
+
       // Pretty print JSON in editor
       rawJson.value = const JsonEncoder.withIndent('  ').convert(decoded);
       errorMessage.value = "";
@@ -69,14 +83,18 @@ class ConfigController extends GetxController {
     }
   }
 
-  // Export/Save file
+  // Export/Save file as Base64 encoded
   Future<void> saveToFile() async {
     if (config.value == null) return;
     refreshRawJson();
-    // Use minified or formatted depending on preference. 
-    // We will save with formatting to make it clean for version control
-    final jsonString = const JsonEncoder.withIndent('  ').convert(config.value!.toJson());
-    await FileHelper.saveFile(jsonString, "timeAnnounce.json");
+
+    final jsonString = const JsonEncoder.withIndent(
+      '  ',
+    ).convert(config.value!.toJson());
+    // Convert JSON to Base64
+    final base64String = base64.encode(utf8.encode(jsonString));
+
+    await FileHelper.saveFile(base64String, "timeAnnounce.qtr");
     isModified.value = false;
   }
 
@@ -91,7 +109,8 @@ class ConfigController extends GetxController {
       alarms.assignAll(parsedConfig.alarmConfig);
       silentHours.assignAll(parsedConfig.silentHours);
       songMaster.assignAll(parsedConfig.songMaster);
-      
+      playlists.assignAll(parsedConfig.playlists);
+
       rawJson.value = text;
       errorMessage.value = "";
       isModified.value = true;
@@ -109,9 +128,12 @@ class ConfigController extends GetxController {
       alarmConfig: alarms.toList(),
       silentHours: silentHours.toList(),
       songMaster: songMaster.toList(),
+      playlists: playlists.toList(),
     );
     config.value = updatedConfig;
-    rawJson.value = const JsonEncoder.withIndent('  ').convert(updatedConfig.toJson());
+    rawJson.value = const JsonEncoder.withIndent(
+      '  ',
+    ).convert(updatedConfig.toJson());
   }
 
   void markModified() {
@@ -122,7 +144,7 @@ class ConfigController extends GetxController {
   // Alarm management
   void addAlarm(AlarmConfig alarm) {
     alarms.add(alarm);
-    markModified();
+    sortAlarmsByEndTime();
   }
 
   void updateAlarm(int index, AlarmConfig alarm) {
@@ -169,6 +191,26 @@ class ConfigController extends GetxController {
   void deleteSongMasterItem(int index) {
     if (index >= 0 && index < songMaster.length) {
       songMaster.removeAt(index);
+      markModified();
+    }
+  }
+
+  // Playlist management
+  void addPlaylist(Playlist playlist) {
+    playlists.add(playlist);
+    markModified();
+  }
+
+  void updatePlaylist(int index, Playlist playlist) {
+    if (index >= 0 && index < playlists.length) {
+      playlists[index] = playlist;
+      markModified();
+    }
+  }
+
+  void deletePlaylist(int index) {
+    if (index >= 0 && index < playlists.length) {
+      playlists.removeAt(index);
       markModified();
     }
   }

@@ -33,7 +33,9 @@ class _SongMasterSectionState extends State<SongMasterSection> {
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
+            border: Border.all(
+              color: theme.colorScheme.onSurface.withOpacity(0.08),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -41,38 +43,67 @@ class _SongMasterSectionState extends State<SongMasterSection> {
             children: [
               Text(
                 isEdit ? "Edit Sound Library Item" : "Add Sound Library Item",
-                style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: nameCtrl,
                 style: TextStyle(color: theme.colorScheme.onSurface),
-                decoration: InputDecoration(labelText: "Name (e.g. Suprabatham)", labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
+                decoration: InputDecoration(
+                  labelText: "Name (e.g. Suprabatham)",
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: idCtrl,
                 style: TextStyle(color: theme.colorScheme.onSurface),
-                decoration: InputDecoration(labelText: "ID/Count (e.g. 12 or Folder Name)", labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
+                decoration: InputDecoration(
+                  labelText: "ID/Count (e.g. 12 or Folder Name)",
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: codeCtrl,
                 style: TextStyle(color: theme.colorScheme.onSurface),
-                decoration: InputDecoration(labelText: "Code (e.g. SP, hr, LP)", labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
+                decoration: InputDecoration(
+                  labelText: "Code (e.g. SP, hr, LP)",
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: categoryCtrl,
                 style: TextStyle(color: theme.colorScheme.onSurface),
-                decoration: InputDecoration(labelText: "Category (e.g. SYS, CUS, SP, VO)", labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
+                decoration: InputDecoration(
+                  labelText: "Category (e.g. SYS, CUS, SP, VO)",
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: sourceVal,
                 dropdownColor: theme.colorScheme.surface,
                 style: TextStyle(color: theme.colorScheme.onSurface),
-                decoration: InputDecoration(labelText: "Source Type", labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
+                decoration: InputDecoration(
+                  labelText: "Source Type",
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
                 items: const [
                   DropdownMenuItem(value: "SYS", child: Text("System (SYS)")),
                   DropdownMenuItem(value: "CUS", child: Text("Custom (CUS)")),
@@ -87,19 +118,31 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                 children: [
                   TextButton(
                     onPressed: () => Get.back(),
-                    child: Text("Cancel", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
+                    child: Text(
+                      "Cancel",
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   ElevatedButton(
                     onPressed: () {
-                      if (nameCtrl.text.trim().isEmpty || idCtrl.text.trim().isEmpty) {
-                        Get.snackbar("Error", "Name and ID are required", snackPosition: SnackPosition.BOTTOM);
+                      if (nameCtrl.text.trim().isEmpty ||
+                          idCtrl.text.trim().isEmpty) {
+                        Get.snackbar(
+                          "Error",
+                          "Name and ID are required",
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
                         return;
                       }
-                      
+
                       // Handle ID as number or string
-                      dynamic finalId = int.tryParse(idCtrl.text.trim()) ?? idCtrl.text.trim();
-                      
+                      dynamic finalId =
+                          int.tryParse(idCtrl.text.trim()) ??
+                          idCtrl.text.trim();
+
                       final newItem = SongMasterItem(
                         id: finalId,
                         code: codeCtrl.text.trim(),
@@ -115,11 +158,14 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                       }
                       Get.back();
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: theme.colorScheme.primary, foregroundColor: theme.colorScheme.onPrimary),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                    ),
                     child: Text(isEdit ? "Save" : "Add"),
-                  )
+                  ),
                 ],
-              )
+              ),
             ],
           ),
         ),
@@ -141,18 +187,26 @@ class _SongMasterSectionState extends State<SongMasterSection> {
       Get.dialog(
         AlertDialog(
           backgroundColor: theme.colorScheme.surface,
-          title: Text("Cannot Delete Sound", style: TextStyle(color: theme.colorScheme.onSurface)),
+          title: Text(
+            "Cannot Delete Sound",
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
           content: Text(
             "This sound is currently used in the playback sequence of the following alarm(s):\n\n"
             "${referencingAlarms.map((e) => '• $e').join('\n')}\n\n"
             "Please remove it from those sequences before deleting.",
-            style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+            style: TextStyle(
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Get.back(),
-              child: Text("OK", style: TextStyle(color: theme.colorScheme.primary)),
-            )
+              child: Text(
+                "OK",
+                style: TextStyle(color: theme.colorScheme.primary),
+              ),
+            ),
           ],
         ),
       );
@@ -162,12 +216,23 @@ class _SongMasterSectionState extends State<SongMasterSection> {
     Get.dialog(
       AlertDialog(
         backgroundColor: theme.colorScheme.surface,
-        title: Text("Delete Sound", style: TextStyle(color: theme.colorScheme.onSurface)),
-        content: Text("Are you sure you want to delete '${item.name}' from the sound library?", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7))),
+        title: Text(
+          "Delete Sound",
+          style: TextStyle(color: theme.colorScheme.onSurface),
+        ),
+        content: Text(
+          "Are you sure you want to delete '${item.name}' from the sound library?",
+          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: Text("Cancel", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
+            child: Text(
+              "Cancel",
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -176,7 +241,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             child: const Text("Delete"),
-          )
+          ),
         ],
       ),
     );
@@ -205,7 +270,10 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                 const SizedBox(height: 4),
                 Text(
                   "Manage available sounds, announcement formats, and custom playlists",
-                  style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 13),
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -216,8 +284,13 @@ class _SongMasterSectionState extends State<SongMasterSection> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.colorScheme.primary,
                 foregroundColor: theme.colorScheme.onPrimary,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ],
@@ -230,7 +303,9 @@ class _SongMasterSectionState extends State<SongMasterSection> {
           decoration: BoxDecoration(
             color: theme.colorScheme.onSurface.withOpacity(0.01),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
+            border: Border.all(
+              color: theme.colorScheme.onSurface.withOpacity(0.08),
+            ),
           ),
           child: Row(
             children: [
@@ -238,35 +313,52 @@ class _SongMasterSectionState extends State<SongMasterSection> {
               Expanded(
                 flex: 2,
                 child: TextField(
-                  style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 14),
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 14,
+                  ),
                   decoration: InputDecoration(
                     hintText: "Search sounds by name, category, or code...",
-                    hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.38)),
-                    prefixIcon: Icon(Icons.search, color: theme.colorScheme.onSurface.withOpacity(0.38), size: 20),
+                    hintStyle: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.38),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: theme.colorScheme.onSurface.withOpacity(0.38),
+                      size: 20,
+                    ),
                     filled: true,
                     fillColor: theme.colorScheme.onSurface.withOpacity(0.02),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                   ),
                   onChanged: (val) => searchQuery.value = val,
                 ),
               ),
               const SizedBox(width: 16),
               // Filter segment (All / System / Custom)
-              Obx(() => Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withOpacity(0.02),
-                  borderRadius: BorderRadius.circular(8),
+              Obx(
+                () => Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withOpacity(0.02),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      _buildFilterChip(theme, "ALL", "All Sounds"),
+                      _buildFilterChip(theme, "SYS", "System"),
+                      _buildFilterChip(theme, "CUS", "Custom"),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    _buildFilterChip(theme, "ALL", "All Sounds"),
-                    _buildFilterChip(theme, "SYS", "System"),
-                    _buildFilterChip(theme, "CUS", "Custom"),
-                  ],
-                ),
-              )),
+              ),
             ],
           ),
         ),
@@ -289,7 +381,9 @@ class _SongMasterSectionState extends State<SongMasterSection> {
           }
 
           if (sourceFilter.value != "ALL") {
-            list = list.where((entry) => entry.value.source == sourceFilter.value).toList();
+            list = list
+                .where((entry) => entry.value.source == sourceFilter.value)
+                .toList();
           }
 
           if (list.isEmpty) {
@@ -299,10 +393,17 @@ class _SongMasterSectionState extends State<SongMasterSection> {
               decoration: BoxDecoration(
                 color: theme.colorScheme.onSurface.withOpacity(0.01),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
+                border: Border.all(
+                  color: theme.colorScheme.onSurface.withOpacity(0.08),
+                ),
               ),
               child: Center(
-                child: Text("No sounds match your filters", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.38))),
+                child: Text(
+                  "No sounds match your filters",
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.38),
+                  ),
+                ),
               ),
             );
           }
@@ -311,64 +412,180 @@ class _SongMasterSectionState extends State<SongMasterSection> {
             decoration: BoxDecoration(
               color: theme.colorScheme.onSurface.withOpacity(0.01),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
+              border: Border.all(
+                color: theme.colorScheme.onSurface.withOpacity(0.08),
+              ),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: DataTable(
-                headingRowColor: WidgetStateProperty.all(theme.colorScheme.onSurface.withOpacity(0.03)),
+                headingRowColor: WidgetStateProperty.all(
+                  theme.colorScheme.onSurface.withOpacity(0.03),
+                ),
                 dataRowMinHeight: 52,
                 dataRowMaxHeight: 52,
                 columns: [
-                  DataColumn(label: Text("INDEX", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("NAME", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("CODE", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("CATEGORY", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("SOURCE", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("ID/COUNT", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("ACTIONS", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold))),
+                  DataColumn(
+                    label: Text(
+                      "INDEX",
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      "NAME",
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      "CODE",
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      "CATEGORY",
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      "SOURCE",
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      "ID/COUNT",
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      "ACTIONS",
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ],
                 rows: list.map((entry) {
                   final idx = entry.key;
                   final item = entry.value;
                   return DataRow(
                     cells: [
-                      DataCell(Text(idx.toString(), style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.3), fontSize: 13))),
-                      DataCell(Text(item.name, style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold))),
-                      DataCell(Text(item.code, style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)))),
-                      DataCell(Text(item.category, style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.38)))),
+                      DataCell(
+                        Text(
+                          idx.toString(),
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withOpacity(0.3),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      DataCell(
+                        Text(
+                          item.name,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      DataCell(
+                        Text(
+                          item.code,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                      ),
+                      DataCell(
+                        Text(
+                          item.category,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withOpacity(
+                              0.38,
+                            ),
+                          ),
+                        ),
+                      ),
                       DataCell(
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: item.source == 'SYS' ? const Color(0xFF6366F1).withOpacity(0.15) : const Color(0xFFF59E0B).withOpacity(0.15),
+                            color: item.source == 'SYS'
+                                ? const Color(0xFF6366F1).withOpacity(0.15)
+                                : const Color(0xFFF59E0B).withOpacity(0.15),
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
-                              color: item.source == 'SYS' ? const Color(0xFF6366F1) : const Color(0xFFF59E0B),
+                              color: item.source == 'SYS'
+                                  ? const Color(0xFF6366F1)
+                                  : const Color(0xFFF59E0B),
                               width: 0.5,
                             ),
                           ),
                           child: Text(
                             item.source == 'SYS' ? 'SYSTEM' : 'CUSTOM',
                             style: TextStyle(
-                              color: item.source == 'SYS' ? const Color(0xFF818CF8) : const Color(0xFFFBBF24),
+                              color: item.source == 'SYS'
+                                  ? const Color(0xFF818CF8)
+                                  : const Color(0xFFFBBF24),
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                       ),
-                      DataCell(Text(item.id.toString(), style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)))),
+                      DataCell(
+                        Text(
+                          item.id.toString(),
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                      ),
                       DataCell(
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.edit_outlined, color: Color(0xFF6366F1), size: 18),
+                              icon: const Icon(
+                                Icons.edit_outlined,
+                                color: Color(0xFF6366F1),
+                                size: 18,
+                              ),
                               onPressed: () => _showAddEditDialog(item, idx),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.redAccent,
+                                size: 18,
+                              ),
                               onPressed: () => _confirmDelete(idx, item),
                             ),
                           ],
@@ -399,7 +616,9 @@ class _SongMasterSectionState extends State<SongMasterSection> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface.withOpacity(0.6),
+            color: isSelected
+                ? theme.colorScheme.onPrimary
+                : theme.colorScheme.onSurface.withOpacity(0.6),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 12,
           ),
