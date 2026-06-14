@@ -23,6 +23,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
     final nameCtrl = TextEditingController(text: item?.name ?? '');
     String sourceVal = item?.source ?? 'CUS';
 
+    final theme = Theme.of(context);
     Get.dialog(
       Dialog(
         backgroundColor: Colors.transparent,
@@ -30,9 +31,9 @@ class _SongMasterSectionState extends State<SongMasterSection> {
           width: 500,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white10),
+            border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -40,38 +41,38 @@ class _SongMasterSectionState extends State<SongMasterSection> {
             children: [
               Text(
                 isEdit ? "Edit Sound Library Item" : "Add Sound Library Item",
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: nameCtrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: "Name (e.g. Suprabatham)", labelStyle: TextStyle(color: Colors.white60)),
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(labelText: "Name (e.g. Suprabatham)", labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: idCtrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: "ID/Count (e.g. 12 or Folder Name)", labelStyle: TextStyle(color: Colors.white60)),
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(labelText: "ID/Count (e.g. 12 or Folder Name)", labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: codeCtrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: "Code (e.g. SP, hr, LP)", labelStyle: TextStyle(color: Colors.white60)),
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(labelText: "Code (e.g. SP, hr, LP)", labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: categoryCtrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: "Category (e.g. SYS, CUS, SP, VO)", labelStyle: TextStyle(color: Colors.white60)),
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(labelText: "Category (e.g. SYS, CUS, SP, VO)", labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: sourceVal,
-                dropdownColor: const Color(0xFF1E293B),
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: "Source Type", labelStyle: TextStyle(color: Colors.white60)),
+                dropdownColor: theme.colorScheme.surface,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(labelText: "Source Type", labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
                 items: const [
                   DropdownMenuItem(value: "SYS", child: Text("System (SYS)")),
                   DropdownMenuItem(value: "CUS", child: Text("Custom (CUS)")),
@@ -86,7 +87,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                 children: [
                   TextButton(
                     onPressed: () => Get.back(),
-                    child: const Text("Cancel", style: TextStyle(color: Colors.white60)),
+                    child: Text("Cancel", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
                   ),
                   const SizedBox(width: 12),
                   ElevatedButton(
@@ -114,7 +115,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                       }
                       Get.back();
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
+                    style: ElevatedButton.styleFrom(backgroundColor: theme.colorScheme.primary, foregroundColor: theme.colorScheme.onPrimary),
                     child: Text(isEdit ? "Save" : "Add"),
                   )
                 ],
@@ -135,21 +136,22 @@ class _SongMasterSectionState extends State<SongMasterSection> {
       }
     }
 
+    final theme = Theme.of(context);
     if (referencingAlarms.isNotEmpty) {
       Get.dialog(
         AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
-          title: const Text("Cannot Delete Sound", style: TextStyle(color: Colors.white)),
+          backgroundColor: theme.colorScheme.surface,
+          title: Text("Cannot Delete Sound", style: TextStyle(color: theme.colorScheme.onSurface)),
           content: Text(
             "This sound is currently used in the playback sequence of the following alarm(s):\n\n"
             "${referencingAlarms.map((e) => '• $e').join('\n')}\n\n"
             "Please remove it from those sequences before deleting.",
-            style: const TextStyle(color: Colors.white70),
+            style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
           ),
           actions: [
             TextButton(
               onPressed: () => Get.back(),
-              child: const Text("OK", style: TextStyle(color: Color(0xFF6366F1))),
+              child: Text("OK", style: TextStyle(color: theme.colorScheme.primary)),
             )
           ],
         ),
@@ -159,13 +161,13 @@ class _SongMasterSectionState extends State<SongMasterSection> {
 
     Get.dialog(
       AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text("Delete Sound", style: TextStyle(color: Colors.white)),
-        content: Text("Are you sure you want to delete '${item.name}' from the sound library?", style: const TextStyle(color: Colors.white70)),
+        backgroundColor: theme.colorScheme.surface,
+        title: Text("Delete Sound", style: TextStyle(color: theme.colorScheme.onSurface)),
+        content: Text("Are you sure you want to delete '${item.name}' from the sound library?", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7))),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text("Cancel", style: TextStyle(color: Colors.white60)),
+            child: Text("Cancel", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
           ),
           ElevatedButton(
             onPressed: () {
@@ -196,14 +198,14 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                 Text(
                   "Sound Library Database (SongMaster)",
                   style: theme.textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
+                    color: theme.colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   "Manage available sounds, announcement formats, and custom playlists",
-                  style: TextStyle(color: Colors.white54, fontSize: 13),
+                  style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 13),
                 ),
               ],
             ),
@@ -212,8 +214,8 @@ class _SongMasterSectionState extends State<SongMasterSection> {
               icon: const Icon(Icons.add, size: 18),
               label: const Text("Add New Sound"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
-                foregroundColor: Colors.white,
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
@@ -226,9 +228,9 @@ class _SongMasterSectionState extends State<SongMasterSection> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.02),
+            color: theme.colorScheme.onSurface.withOpacity(0.01),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white10),
+            border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
           ),
           child: Row(
             children: [
@@ -236,13 +238,13 @@ class _SongMasterSectionState extends State<SongMasterSection> {
               Expanded(
                 flex: 2,
                 child: TextField(
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: "Search sounds by name, category, or code...",
-                    hintStyle: const TextStyle(color: Colors.white30),
-                    prefixIcon: const Icon(Icons.search, color: Colors.white30, size: 20),
+                    hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.38)),
+                    prefixIcon: Icon(Icons.search, color: theme.colorScheme.onSurface.withOpacity(0.38), size: 20),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.02),
+                    fillColor: theme.colorScheme.onSurface.withOpacity(0.02),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
@@ -254,14 +256,14 @@ class _SongMasterSectionState extends State<SongMasterSection> {
               Obx(() => Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.02),
+                  color: theme.colorScheme.onSurface.withOpacity(0.02),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    _buildFilterChip("ALL", "All Sounds"),
-                    _buildFilterChip("SYS", "System"),
-                    _buildFilterChip("CUS", "Custom"),
+                    _buildFilterChip(theme, "ALL", "All Sounds"),
+                    _buildFilterChip(theme, "SYS", "System"),
+                    _buildFilterChip(theme, "CUS", "Custom"),
                   ],
                 ),
               )),
@@ -295,46 +297,46 @@ class _SongMasterSectionState extends State<SongMasterSection> {
               width: double.infinity,
               padding: const EdgeInsets.all(48),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.01),
+                color: theme.colorScheme.onSurface.withOpacity(0.01),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white10),
+                border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
               ),
-              child: const Center(
-                child: Text("No sounds match your filters", style: TextStyle(color: Colors.white38)),
+              child: Center(
+                child: Text("No sounds match your filters", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.38))),
               ),
             );
           }
 
           return Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.01),
+              color: theme.colorScheme.onSurface.withOpacity(0.01),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: DataTable(
-                headingRowColor: WidgetStateProperty.all(Colors.white.withOpacity(0.03)),
+                headingRowColor: WidgetStateProperty.all(theme.colorScheme.onSurface.withOpacity(0.03)),
                 dataRowMinHeight: 52,
                 dataRowMaxHeight: 52,
-                columns: const [
-                  DataColumn(label: Text("INDEX", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("NAME", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("CODE", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("CATEGORY", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("SOURCE", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("ID/COUNT", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text("ACTIONS", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold))),
+                columns: [
+                  DataColumn(label: Text("INDEX", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text("NAME", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text("CODE", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text("CATEGORY", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text("SOURCE", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text("ID/COUNT", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text("ACTIONS", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold))),
                 ],
                 rows: list.map((entry) {
                   final idx = entry.key;
                   final item = entry.value;
                   return DataRow(
                     cells: [
-                      DataCell(Text(idx.toString(), style: const TextStyle(color: Colors.white30, fontSize: 13))),
-                      DataCell(Text(item.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
-                      DataCell(Text(item.code, style: const TextStyle(color: Colors.white70))),
-                      DataCell(Text(item.category, style: const TextStyle(color: Colors.white38))),
+                      DataCell(Text(idx.toString(), style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.3), fontSize: 13))),
+                      DataCell(Text(item.name, style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold))),
+                      DataCell(Text(item.code, style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)))),
+                      DataCell(Text(item.category, style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.38)))),
                       DataCell(
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -356,7 +358,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                           ),
                         ),
                       ),
-                      DataCell(Text(item.id.toString(), style: const TextStyle(color: Colors.white70))),
+                      DataCell(Text(item.id.toString(), style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)))),
                       DataCell(
                         Row(
                           mainAxisSize: MainAxisSize.min,
@@ -383,7 +385,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
     );
   }
 
-  Widget _buildFilterChip(String val, String label) {
+  Widget _buildFilterChip(ThemeData theme, String val, String label) {
     final isSelected = sourceFilter.value == val;
     return InkWell(
       onTap: () => sourceFilter.value = val,
@@ -391,13 +393,13 @@ class _SongMasterSectionState extends State<SongMasterSection> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF6366F1) : Colors.transparent,
+          color: isSelected ? theme.colorScheme.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white60,
+            color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface.withOpacity(0.6),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 12,
           ),

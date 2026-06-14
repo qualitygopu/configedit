@@ -20,17 +20,17 @@ class AlarmsScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     "Alarms Configuration Dashboard",
-                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 22, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     "Drag items to reorder priority, click edit to modify timing rules or sequence tracks.",
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                    style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 13),
                   ),
                 ],
               ),
@@ -41,8 +41,8 @@ class AlarmsScreen extends StatelessWidget {
                     icon: const Icon(Icons.sort, size: 18),
                     label: const Text("Sort by End Time"),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      side: const BorderSide(color: Colors.white24),
+                      foregroundColor: theme.brightness == Brightness.dark ? Colors.white70 : const Color(0xFF475569),
+                      side: BorderSide(color: theme.brightness == Brightness.dark ? Colors.white24 : const Color(0xFFCBD5E1)),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
@@ -76,18 +76,18 @@ class AlarmsScreen extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(64),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.01),
+                    color: theme.colorScheme.onSurface.withOpacity(0.01),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white10),
+                    border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
                   ),
-                  child: const Column(
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.alarm_add, color: Colors.white24, size: 64),
-                      SizedBox(height: 16),
-                      Text("No alarms configured", style: TextStyle(color: Colors.white60, fontSize: 16)),
-                      SizedBox(height: 4),
-                      Text("Click the button at top right to build your first alarm schedule", style: TextStyle(color: Colors.white38, fontSize: 13)),
+                      Icon(Icons.alarm_add, color: theme.colorScheme.onSurface.withOpacity(0.24), size: 64),
+                      const SizedBox(height: 16),
+                      Text("No alarms configured", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 16)),
+                      const SizedBox(height: 4),
+                      Text("Click the button at top right to build your first alarm schedule", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.38), fontSize: 13)),
                     ],
                   ),
                 );
@@ -150,19 +150,14 @@ class AlarmsScreen extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white10),
-          gradient: LinearGradient(
-            colors: [
-              Colors.white.withOpacity(0.02),
-              Colors.white.withOpacity(0.01),
-            ],
-          ),
+          border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
+          color: theme.cardTheme.color,
         ),
         padding: const EdgeInsets.all(20),
         child: Row(
           children: [
             // Drag handle
-            const Icon(Icons.drag_handle, color: Colors.white30, size: 24),
+            Icon(Icons.drag_handle, color: theme.colorScheme.onSurface.withOpacity(0.3), size: 24),
             const SizedBox(width: 16),
             
             // Icon status circle
@@ -170,17 +165,17 @@ class AlarmsScreen extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: alarm.state ? const Color(0xFF10B981).withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                color: alarm.state ? const Color(0xFF10B981).withOpacity(0.1) : theme.colorScheme.onSurface.withOpacity(0.05),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: alarm.state ? const Color(0xFF10B981) : Colors.white24,
+                  color: alarm.state ? const Color(0xFF10B981) : theme.colorScheme.onSurface.withOpacity(0.2),
                   width: 1,
                 ),
               ),
               child: Center(
                 child: Icon(
                   Icons.alarm,
-                  color: alarm.state ? const Color(0xFF10B981) : Colors.white38,
+                  color: alarm.state ? const Color(0xFF10B981) : theme.colorScheme.onSurface.withOpacity(0.38),
                   size: 22,
                 ),
               ),
@@ -197,19 +192,19 @@ class AlarmsScreen extends StatelessWidget {
                     children: [
                       Text(
                         alarm.tit,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       if (alarm.id != null && alarm.id!.isNotEmpty) ...[
                         const SizedBox(width: 12),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.05),
+                            color: theme.colorScheme.onSurface.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             alarm.id!,
-                            style: const TextStyle(color: Colors.white60, fontSize: 10, fontFamily: 'monospace'),
+                            style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 10, fontFamily: 'monospace'),
                           ),
                         ),
                       ]
@@ -218,18 +213,18 @@ class AlarmsScreen extends StatelessWidget {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today, color: Colors.white38, size: 12),
+                      Icon(Icons.calendar_today, color: theme.colorScheme.onSurface.withOpacity(0.38), size: 12),
                       const SizedBox(width: 6),
                       Text(
                         dayString,
-                        style: const TextStyle(color: Colors.white60, fontSize: 12),
+                        style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 12),
                       ),
                       const SizedBox(width: 16),
-                      const Icon(Icons.access_time, color: Colors.white38, size: 12),
+                      Icon(Icons.access_time, color: theme.colorScheme.onSurface.withOpacity(0.38), size: 12),
                       const SizedBox(width: 6),
                       Text(
                         "Hours: $hourString (Min: $minStr)",
-                        style: const TextStyle(color: Colors.white60, fontSize: 12),
+                        style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 12),
                       ),
                     ],
                   ),
@@ -298,13 +293,13 @@ class AlarmsScreen extends StatelessWidget {
                   onPressed: () {
                     Get.dialog(
                       AlertDialog(
-                        backgroundColor: const Color(0xFF1E293B),
-                        title: const Text("Delete Alarm", style: TextStyle(color: Colors.white)),
-                        content: Text("Are you sure you want to delete '${alarm.tit}'?", style: const TextStyle(color: Colors.white70)),
+                        backgroundColor: theme.colorScheme.surface,
+                        title: Text("Delete Alarm", style: TextStyle(color: theme.colorScheme.onSurface)),
+                        content: Text("Are you sure you want to delete '${alarm.tit}'?", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7))),
                         actions: [
                           TextButton(
                             onPressed: () => Get.back(),
-                            child: const Text("Cancel", style: TextStyle(color: Colors.white60)),
+                            child: Text("Cancel", style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6))),
                           ),
                           ElevatedButton(
                             onPressed: () {

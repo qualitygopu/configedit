@@ -154,12 +154,13 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final bgGradient = LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [
-        const Color(0xFF1E293B).withOpacity(0.95),
-        const Color(0xFF0F172A).withOpacity(0.95),
+        theme.colorScheme.surface.withOpacity(0.98),
+        theme.scaffoldBackgroundColor.withOpacity(0.98),
       ],
     );
 
@@ -172,10 +173,10 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
         decoration: BoxDecoration(
           gradient: bgGradient,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white10),
+          border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withOpacity(isDark ? 0.5 : 0.15),
               blurRadius: 32,
               offset: const Offset(0, 16),
             )
@@ -192,19 +193,19 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                   Text(
                     widget.alarm != null ? "Edit Alarm Configuration" : "New Alarm Configuration",
                     style: theme.textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
+                      color: theme.colorScheme.onSurface,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                     ),
                   ),
                   IconButton(
                     onPressed: () => Get.back(),
-                    icon: const Icon(Icons.close, color: Colors.white70),
+                    icon: Icon(Icons.close, color: theme.colorScheme.onSurface.withOpacity(0.6)),
                   )
                 ],
               ),
             ),
-            const Divider(color: Colors.white10, height: 1),
+            Divider(color: theme.colorScheme.onSurface.withOpacity(0.08), height: 1),
 
             // Scrollable Content
             Expanded(
@@ -237,16 +238,16 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               "State",
-                              style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                              style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontSize: 13, fontWeight: FontWeight.w500),
                             ),
                             const SizedBox(height: 8),
                             Switch(
                               value: stateValue,
                               activeColor: const Color(0xFF10B981),
                               inactiveThumbColor: Colors.grey,
-                              inactiveTrackColor: Colors.white10,
+                              inactiveTrackColor: theme.colorScheme.onSurface.withOpacity(0.15),
                               onChanged: (val) {
                                 setState(() {
                                   stateValue = val;
@@ -260,9 +261,9 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                     const SizedBox(height: 24),
 
                     // Weekdays selection
-                    const Text(
+                    Text(
                       "Days of the Week",
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     _buildWeekdaySelector(),
@@ -272,9 +273,9 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           "Hours Visual Scheduler (Click to toggle hours)",
-                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         TextButton(
                           onPressed: () {
@@ -288,7 +289,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                           },
                           child: Text(
                             selectedHours.length == 24 ? "Deselect All" : "Select All",
-                            style: const TextStyle(color: Color(0xFF6366F1)),
+                            style: TextStyle(color: theme.colorScheme.primary),
                           ),
                         )
                       ],
@@ -372,11 +373,11 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                           children: [
                             Text(
                               "Announcement Sequence (SC)",
-                              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                             Text(
                               "Drag items to reorder the announcement playback sequence",
-                              style: TextStyle(color: Colors.white54, fontSize: 12),
+                              style: TextStyle(fontSize: 12),
                             ),
                           ],
                         ),
@@ -421,7 +422,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                 ),
               ),
             ),
-            const Divider(color: Colors.white10, height: 1),
+            Divider(color: theme.colorScheme.onSurface.withOpacity(0.08), height: 1),
 
             // Footer Actions
             Padding(
@@ -432,8 +433,8 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                   OutlinedButton(
                     onPressed: () => Get.back(),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      side: const BorderSide(color: Colors.white30),
+                      foregroundColor: theme.brightness == Brightness.dark ? Colors.white70 : const Color(0xFF475569),
+                      side: BorderSide(color: theme.brightness == Brightness.dark ? Colors.white30 : const Color(0xFFCBD5E1)),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -443,8 +444,8 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                   ElevatedButton(
                     onPressed: save,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366F1),
-                      foregroundColor: Colors.white,
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
@@ -465,22 +466,23 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
     required TextEditingController controller,
     required String hint,
   }) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontSize: 13, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: theme.colorScheme.onSurface),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: Colors.white30),
+            hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.3)),
             filled: true,
-            fillColor: Colors.white.withOpacity(0.05),
+            fillColor: theme.colorScheme.onSurface.withOpacity(0.05),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -499,18 +501,19 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
     required int max,
     required ValueChanged<int> onChanged,
   }) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: theme.colorScheme.onSurface.withOpacity(0.05),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -518,13 +521,13 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
             children: [
               Text(
                 value.toString(),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold),
               ),
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_drop_up, color: Colors.white70, size: 16),
+                    icon: Icon(Icons.arrow_drop_up, color: theme.colorScheme.onSurface.withOpacity(0.7), size: 16),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: () {
@@ -532,7 +535,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.arrow_drop_down, color: Colors.white70, size: 16),
+                    icon: Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurface.withOpacity(0.7), size: 16),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: () {
@@ -549,6 +552,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
   }
 
   Widget _buildWeekdaySelector() {
+    final theme = Theme.of(context);
     final days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -572,17 +576,17 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF6366F1).withOpacity(0.2) : Colors.white.withOpacity(0.03),
+                  color: isSelected ? theme.colorScheme.primary.withOpacity(0.2) : theme.colorScheme.onSurface.withOpacity(0.03),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: isSelected ? const Color(0xFF6366F1) : Colors.white10,
+                    color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.08),
                   ),
                 ),
                 child: Center(
                   child: Text(
                     days[index],
                     style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.white60,
+                      color: isSelected ? theme.colorScheme.onSurface : theme.colorScheme.onSurface.withOpacity(0.6),
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
@@ -596,6 +600,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
   }
 
   Widget _buildHoursGrid() {
+    final theme = Theme.of(context);
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -622,17 +627,17 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
           borderRadius: BorderRadius.circular(8),
           child: Container(
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF10B981).withOpacity(0.2) : Colors.white.withOpacity(0.03),
+              color: isSelected ? theme.colorScheme.secondary.withOpacity(0.2) : theme.colorScheme.onSurface.withOpacity(0.03),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isSelected ? const Color(0xFF10B981) : Colors.white10,
+                color: isSelected ? theme.colorScheme.secondary : theme.colorScheme.onSurface.withOpacity(0.08),
               ),
             ),
             child: Center(
               child: Text(
                 hourStr,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white60,
+                  color: isSelected ? theme.colorScheme.onSurface : theme.colorScheme.onSurface.withOpacity(0.6),
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   fontSize: 12,
                 ),
@@ -645,19 +650,20 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
   }
 
   Widget _buildSequenceList() {
+    final theme = Theme.of(context);
     if (selectedSC.isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.02),
+          color: theme.colorScheme.onSurface.withOpacity(0.01),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white10),
+          border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
         ),
-        child: const Center(
+        child: Center(
           child: Text(
             "No announcements configured. Add sounds using the button above.",
-            style: TextStyle(color: Colors.white38),
+            style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.38)),
           ),
         ),
       );
@@ -666,9 +672,9 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
     return Container(
       height: 220,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.01),
+        color: theme.colorScheme.onSurface.withOpacity(0.01),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
       ),
       child: ReorderableListView(
         scrollDirection: Axis.horizontal,
@@ -693,14 +699,9 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
             margin: const EdgeInsets.symmetric(horizontal: 6),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.white.withOpacity(0.06),
-                  Colors.white.withOpacity(0.03),
-                ],
-              ),
+              color: theme.cardTheme.color,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -721,7 +722,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white30, size: 16),
+                      icon: Icon(Icons.close, color: theme.colorScheme.onSurface.withOpacity(0.3), size: 16),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () {
@@ -742,17 +743,17 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                         item.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         item.category,
-                        style: const TextStyle(color: Colors.white38, fontSize: 10),
+                        style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.38), fontSize: 10),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.drag_handle, color: Colors.white30, size: 18),
+                Icon(Icons.drag_handle, color: theme.colorScheme.onSurface.withOpacity(0.3), size: 18),
               ],
             ),
           );

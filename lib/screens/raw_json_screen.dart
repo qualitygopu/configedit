@@ -45,17 +45,17 @@ class _RawJsonScreenState extends State<RawJsonScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     "Raw JSON Configuration Editor",
-                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 22, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     "Directly modify the config JSON. Invalid JSON syntax will display errors.",
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 13),
                   ),
                 ],
               ),
@@ -126,17 +126,19 @@ class _RawJsonScreenState extends State<RawJsonScreen> {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.black.withOpacity(0.3)
+                    : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white10),
+                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.08)),
               ),
               padding: const EdgeInsets.all(16),
               child: TextField(
                 controller: jsonEditorController,
                 maxLines: null,
                 minLines: 100, // Make it fill constraints
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontFamily: 'monospace',
                   fontSize: 13,
                   height: 1.5,
