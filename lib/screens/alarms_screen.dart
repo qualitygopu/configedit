@@ -22,135 +22,154 @@ class AlarmsScreen extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.all(32.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 650;
+
+          final titleColumn = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Alarms Configuration Dashboard",
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Drag items to reorder priority, click edit to modify timing rules or sequence tracks.",
-                    style: TextStyle(
-                      color: subtitleColor,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
+              Text(
+                "Alarms Configuration Dashboard",
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              Row(
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () => controller.sortAlarmsByEndTime(),
-                    icon: const Icon(Icons.sort, size: 18),
-                    label: const Text("Sort by End Time"),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: theme.brightness == Brightness.dark
-                          ? Colors.white70
-                          : const Color(0xFF475569),
-                      side: BorderSide(
-                        color: theme.brightness == Brightness.dark
-                            ? Colors.white24
-                            : const Color(0xFFCBD5E1),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Get.dialog(const AlarmEditorDialog());
-                    },
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text("Add New Alarm"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 16,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 4),
+              Text(
+                "Drag items to reorder priority, click edit to modify timing rules or sequence tracks.",
+                style: TextStyle(color: subtitleColor, fontSize: 13),
               ),
             ],
-          ),
-          const SizedBox(height: 32),
+          );
 
-          Expanded(
-            child: Obx(() {
-              if (controller.alarms.isEmpty) {
-                return Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(64),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurface.withOpacity(0.01),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: theme.colorScheme.onSurface.withOpacity(0.08),
-                    ),
+          final actionsWrap = Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => controller.sortAlarmsByEndTime(),
+                icon: const Icon(Icons.sort, size: 18),
+                label: const Text("Sort by End Time"),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: theme.brightness == Brightness.dark
+                      ? Colors.white70
+                      : const Color(0xFF475569),
+                  side: BorderSide(
+                    color: theme.brightness == Brightness.dark
+                        ? Colors.white24
+                        : const Color(0xFFCBD5E1),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.alarm_add,
-                        color: theme.colorScheme.onSurface.withOpacity(0.24),
-                        size: 64,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        "No alarms configured",
-                        style: TextStyle(
-                          color: subtitleColor,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Click the button at top right to build your first alarm schedule",
-                        style: TextStyle(
-                          color: hintColor,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
                   ),
-                );
-              }
-
-              return ReorderableListView.builder(
-                itemCount: controller.alarms.length,
-                onReorder: controller.reorderAlarms,
-                itemBuilder: (context, idx) {
-                  final alarm = controller.alarms[idx];
-                  return _buildAlarmCard(context, alarm, idx, theme);
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Get.dialog(const AlarmEditorDialog());
                 },
-              );
-            }),
-          ),
-        ],
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text("Add New Alarm"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          );
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isNarrow) ...[
+                titleColumn,
+                const SizedBox(height: 16),
+                actionsWrap,
+              ] else ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(child: titleColumn),
+                    const SizedBox(width: 16),
+                    actionsWrap,
+                  ],
+                ),
+              ],
+              const SizedBox(height: 32),
+
+              Expanded(
+                child: Obx(() {
+                  if (controller.alarms.isEmpty) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 32,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurface.withOpacity(0.01),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: theme.colorScheme.onSurface.withOpacity(0.08),
+                        ),
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.alarm_add,
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.24,
+                              ),
+                              size: 64,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              "No alarms configured",
+                              style: TextStyle(
+                                color: subtitleColor,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Click the button at top right to build your first alarm schedule",
+                              style: TextStyle(color: hintColor, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  return ReorderableListView.builder(
+                    itemCount: controller.alarms.length,
+                    onReorder: controller.reorderAlarms,
+                    itemBuilder: (context, idx) {
+                      final alarm = controller.alarms[idx];
+                      return _buildAlarmCard(context, alarm, idx, theme);
+                    },
+                  );
+                }),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -306,32 +325,18 @@ class AlarmsScreen extends StatelessWidget {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(
-                        Icons.calendar_today,
-                        color: hintColor,
-                        size: 12,
-                      ),
+                      Icon(Icons.calendar_today, color: hintColor, size: 12),
                       const SizedBox(width: 6),
                       Text(
                         dayString,
-                        style: TextStyle(
-                          color: subtitleColor,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: subtitleColor, fontSize: 12),
                       ),
                       const SizedBox(width: 16),
-                      Icon(
-                        Icons.access_time,
-                        color: hintColor,
-                        size: 12,
-                      ),
+                      Icon(Icons.access_time, color: hintColor, size: 12),
                       const SizedBox(width: 6),
                       Text(
                         "Hours: $hourString (Min: $minStr)",
-                        style: TextStyle(
-                          color: subtitleColor,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: subtitleColor, fontSize: 12),
                       ),
                     ],
                   ),

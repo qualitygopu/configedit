@@ -134,31 +134,33 @@ class _MainShellState extends State<MainShell> {
 
             // Navigation Links
             Expanded(
-              child: Column(
-                children: [
-                  _buildSidebarItem(
-                    0,
-                    Icons.alarm_outlined,
-                    "Alarms Configuration",
-                  ),
-                  _buildSidebarItem(
-                    1,
-                    Icons.volume_off_outlined,
-                    "Silent Hours",
-                  ),
-                  _buildSidebarItem(
-                    2,
-                    Icons.library_music_outlined,
-                    "Sound Library",
-                  ),
-                  _buildSidebarItem(
-                    4,
-                    Icons.queue_music_outlined,
-                    "Playlist Manager",
-                  ),
-                  _buildSidebarItem(3, Icons.code_outlined, "Raw JSON Editor"),
-                  _buildSidebarItem(5, Icons.folder_outlined, "File Manager"),
-                ],
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildSidebarItem(
+                      0,
+                      Icons.alarm_outlined,
+                      "Alarms Configuration",
+                    ),
+                    _buildSidebarItem(
+                      1,
+                      Icons.volume_off_outlined,
+                      "Silent Hours",
+                    ),
+                    _buildSidebarItem(
+                      2,
+                      Icons.library_music_outlined,
+                      "Sound Library",
+                    ),
+                    _buildSidebarItem(
+                      4,
+                      Icons.queue_music_outlined,
+                      "Playlist Manager",
+                    ),
+                    _buildSidebarItem(3, Icons.code_outlined, "Raw JSON Editor"),
+                    _buildSidebarItem(5, Icons.folder_outlined, "File Manager"),
+                  ],
+                ),
               ),
             ),
 
@@ -221,8 +223,10 @@ class _MainShellState extends State<MainShell> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         // Manual select
                         TextButton.icon(
@@ -318,25 +322,29 @@ class _MainShellState extends State<MainShell> {
                           fontSize: 11,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withOpacity(0.05)
-                              : Colors.black.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          "timeAnnounce.json",
-                          style: TextStyle(
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
                             color: isDark
-                                ? Colors.white
-                                : const Color(0xFF0F172A),
-                            fontSize: 10,
-                            fontFamily: 'monospace',
+                                ? Colors.white.withOpacity(0.05)
+                                : Colors.black.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            "timeAnnounce.json",
+                            style: TextStyle(
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF0F172A),
+                              fontSize: 10,
+                              fontFamily: 'monospace',
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ),
@@ -381,14 +389,18 @@ class _MainShellState extends State<MainShell> {
                 size: 20,
               ),
               const SizedBox(width: 14),
-              Text(
-                title,
-                style: TextStyle(
-                  color: isSelected
-                      ? (isDark ? Colors.white : theme.colorScheme.primary)
-                      : (isDark ? Colors.white60 : const Color(0xFF334155)),
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 14,
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: isSelected
+                        ? (isDark ? Colors.white : theme.colorScheme.primary)
+                        : (isDark ? Colors.white60 : const Color(0xFF334155)),
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

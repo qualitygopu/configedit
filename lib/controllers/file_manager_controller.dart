@@ -116,7 +116,24 @@ class FileManagerController extends GetxController {
       }
 
       final dir = Directory(path);
-      if (!await dir.exists()) {
+      bool exists = false;
+      try {
+        exists = await dir.exists();
+      } catch (_) {}
+
+      if (!exists && Platform.isMacOS) {
+        try {
+          final result = await Process.run('osascript', [
+            '-e',
+            'tell application "Finder"\ntry\nexists (POSIX file "$path" as alias)\non error\nreturn "false"\nend try\nend tell',
+          ]);
+          if (result.exitCode == 0) {
+            exists = result.stdout.toString().trim() == 'true';
+          }
+        } catch (_) {}
+      }
+
+      if (!exists) {
         errorMessage.value = 'Folder does not exist';
         isLoading.value = false;
         return;
@@ -128,12 +145,29 @@ class FileManagerController extends GetxController {
       // Load items
       final List<FileSystemEntity> loadedItems = [];
       try {
-        await for (final entity in dir.list()) {
-          final name = entity.path.split(Platform.pathSeparator).last;
-          if (name.isNotEmpty &&
-              !name.startsWith('.') &&
-              !(entity is Directory && _isHiddenFolderName(name))) {
-            loadedItems.add(entity);
+        try {
+          await for (final entity in dir.list()) {
+            final name = entity.path.split(Platform.pathSeparator).last;
+            if (name.isNotEmpty &&
+                !name.startsWith('.') &&
+                !(entity is Directory && _isHiddenFolderName(name))) {
+              loadedItems.add(entity);
+            }
+          }
+        } catch (e) {
+          final folders = await FileHelper.getSubfolders(path);
+          final files = await FileHelper.getFiles(path);
+          if (folders.isEmpty && files.isEmpty) {
+            rethrow;
+          }
+          final separator = Platform.pathSeparator;
+          for (final f in folders) {
+            if (!_isHiddenFolderName(f)) {
+              loadedItems.add(Directory('$path$separator$f'));
+            }
+          }
+          for (final f in files) {
+            loadedItems.add(File('$path$separator$f'));
           }
         }
       } catch (e) {
@@ -234,7 +268,22 @@ class FileManagerController extends GetxController {
         return;
       }
 
-      await newFolder.create();
+      try {
+        await newFolder.create();
+      } catch (e) {
+        if (Platform.isMacOS) {
+          final parent = currentPath.value;
+          final result = await Process.run('osascript', [
+            '-e',
+            'tell application "Finder" to make new folder at (POSIX file "$parent" as alias) with properties {name:"$folderName"}',
+          ]);
+          if (result.exitCode != 0) {
+            rethrow;
+          }
+        } else {
+          rethrow;
+        }
+      }
       Get.snackbar(
         'Success',
         'Folder created: $folderName',
@@ -391,7 +440,20 @@ class FileManagerController extends GetxController {
         if (_normalizePath(destPath) == _normalizePath(sourcePath)) {
           return false;
         }
-        await file.copy(destPath);
+        try {
+          await file.copy(destPath);
+        } catch (_) {
+          if (Platform.isMacOS) {
+            final destFolder = currentPath.value;
+            final result = await Process.run('osascript', [
+              '-e',
+              'tell application "Finder" to duplicate file (POSIX file "$sourcePath" as alias) to folder (POSIX file "$destFolder" as alias) with replacing',
+            ]);
+            if (result.exitCode != 0) rethrow;
+          } else {
+            rethrow;
+          }
+        }
         return true;
       }
 
@@ -430,7 +492,19 @@ class FileManagerController extends GetxController {
             await File(destPath).exists()) {
           return false;
         }
-        await file.copy(destPath);
+        try {
+          await file.copy(destPath);
+        } catch (_) {
+          if (Platform.isMacOS) {
+            final result = await Process.run('osascript', [
+              '-e',
+              'tell application "Finder" to duplicate file (POSIX file "$sourcePath" as alias) to folder (POSIX file "$destinationFolderPath" as alias) with replacing',
+            ]);
+            if (result.exitCode != 0) rethrow;
+          } else {
+            rethrow;
+          }
+        }
         return true;
       }
 
@@ -562,10 +636,40 @@ class FileManagerController extends GetxController {
   Future<void> _copyDirectory(Directory source, Directory destination) async {
     try {
       if (!await destination.exists()) {
-        await destination.create(recursive: true);
+        if (Platform.isMacOS && destination.path.contains('/Volumes/')) {
+          try {
+            final parent = destination.parent.path;
+            final name = destination.path.split(Platform.pathSeparator).last;
+            await Process.run('osascript', [
+              '-e',
+              'tell application "Finder" to make new folder at (POSIX file "$parent" as alias) with properties {name:"$name"}',
+            ]);
+          } catch (_) {
+            await destination.create(recursive: true);
+          }
+        } else {
+          await destination.create(recursive: true);
+        }
       }
 
-      await for (var entity in source.list(recursive: false)) {
+      final List<FileSystemEntity> entities = [];
+      try {
+        await for (var entity in source.list(recursive: false)) {
+          entities.add(entity);
+        }
+      } catch (_) {
+        final folders = await FileHelper.getSubfolders(source.path);
+        final files = await FileHelper.getFiles(source.path);
+        final separator = Platform.pathSeparator;
+        for (final f in folders) {
+          entities.add(Directory('${source.path}$separator$f'));
+        }
+        for (final f in files) {
+          entities.add(File('${source.path}$separator$f'));
+        }
+      }
+
+      for (var entity in entities) {
         final basename = entity.path.split(Platform.pathSeparator).last;
         final targetPath =
             '${destination.path}${Platform.pathSeparator}$basename';
@@ -573,7 +677,18 @@ class FileManagerController extends GetxController {
         if (entity is Directory) {
           await _copyDirectory(entity, Directory(targetPath));
         } else if (entity is File) {
-          await (entity as File).copy(targetPath);
+          try {
+            await (entity as File).copy(targetPath);
+          } catch (_) {
+            if (Platform.isMacOS) {
+              await Process.run('osascript', [
+                '-e',
+                'tell application "Finder" to duplicate file (POSIX file "${entity.path}" as alias) to folder (POSIX file "${destination.path}" as alias) with replacing',
+              ]);
+            } else {
+              rethrow;
+            }
+          }
         }
       }
     } catch (e) {
@@ -585,10 +700,24 @@ class FileManagerController extends GetxController {
     try {
       final name = item.path.split(Platform.pathSeparator).last;
 
-      if (item is File) {
-        await item.delete();
-      } else if (item is Directory) {
-        await item.delete(recursive: true);
+      try {
+        if (item is File) {
+          await item.delete();
+        } else if (item is Directory) {
+          await item.delete(recursive: true);
+        }
+      } catch (e) {
+        if (Platform.isMacOS) {
+          final result = await Process.run('osascript', [
+            '-e',
+            'tell application "Finder" to delete (POSIX file "${item.path}" as alias)',
+          ]);
+          if (result.exitCode != 0) {
+            rethrow;
+          }
+        } else {
+          rethrow;
+        }
       }
 
       Get.snackbar(
@@ -615,10 +744,24 @@ class FileManagerController extends GetxController {
       final newPath =
           '${Directory(item.path).parent.path}${Platform.pathSeparator}$newName';
 
-      if (item is File) {
-        await item.rename(newPath);
-      } else if (item is Directory) {
-        await item.rename(newPath);
+      try {
+        if (item is File) {
+          await item.rename(newPath);
+        } else if (item is Directory) {
+          await item.rename(newPath);
+        }
+      } catch (e) {
+        if (Platform.isMacOS) {
+          final result = await Process.run('osascript', [
+            '-e',
+            'tell application "Finder" to set name of (POSIX file "${item.path}" as alias) to "$newName"',
+          ]);
+          if (result.exitCode != 0) {
+            rethrow;
+          }
+        } else {
+          rethrow;
+        }
       }
 
       Get.snackbar(
