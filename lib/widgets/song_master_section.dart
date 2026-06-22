@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/config_model.dart';
 import '../controllers/config_controller.dart';
+import '../utils/file_helper.dart';
 
 class SongMasterSection extends StatefulWidget {
   const SongMasterSection({super.key});
@@ -12,163 +13,20 @@ class SongMasterSection extends StatefulWidget {
 
 class _SongMasterSectionState extends State<SongMasterSection> {
   final ConfigController controller = Get.find<ConfigController>();
-  final RxString searchQuery = "".obs;
-  final RxString sourceFilter = "ALL".obs; // ALL, SYS, CUS
+  final RxBool showSystemSounds = false.obs; // Toggle to show system sounds
 
   void _showAddEditDialog([SongMasterItem? item, int? index]) {
-    final isEdit = item != null;
-    final idCtrl = TextEditingController(text: item?.id?.toString() ?? '');
-    final codeCtrl = TextEditingController(text: item?.code ?? '');
-    final categoryCtrl = TextEditingController(text: item?.category ?? '');
-    final nameCtrl = TextEditingController(text: item?.name ?? '');
-    String sourceVal = item?.source ?? 'CUS';
-
-    final theme = Theme.of(context);
     Get.dialog(
-      Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          width: 500,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: theme.colorScheme.onSurface.withOpacity(0.08),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                isEdit ? "Edit Sound Library Item" : "Add Sound Library Item",
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: nameCtrl,
-                style: TextStyle(color: theme.colorScheme.onSurface),
-                decoration: InputDecoration(
-                  labelText: "Name (e.g. Suprabatham)",
-                  labelStyle: TextStyle(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: idCtrl,
-                style: TextStyle(color: theme.colorScheme.onSurface),
-                decoration: InputDecoration(
-                  labelText: "ID/Count (e.g. 12 or Folder Name)",
-                  labelStyle: TextStyle(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: codeCtrl,
-                style: TextStyle(color: theme.colorScheme.onSurface),
-                decoration: InputDecoration(
-                  labelText: "Code (e.g. SP, hr, LP)",
-                  labelStyle: TextStyle(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: categoryCtrl,
-                style: TextStyle(color: theme.colorScheme.onSurface),
-                decoration: InputDecoration(
-                  labelText: "Category (e.g. SYS, CUS, SP, VO)",
-                  labelStyle: TextStyle(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: sourceVal,
-                dropdownColor: theme.colorScheme.surface,
-                style: TextStyle(color: theme.colorScheme.onSurface),
-                decoration: InputDecoration(
-                  labelText: "Source Type",
-                  labelStyle: TextStyle(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-                items: const [
-                  DropdownMenuItem(value: "SYS", child: Text("System (SYS)")),
-                  DropdownMenuItem(value: "CUS", child: Text("Custom (CUS)")),
-                ],
-                onChanged: (val) {
-                  if (val != null) sourceVal = val;
-                },
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Get.back(),
-                    child: Text(
-                      "Cancel",
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (nameCtrl.text.trim().isEmpty ||
-                          idCtrl.text.trim().isEmpty) {
-                        Get.snackbar(
-                          "Error",
-                          "Name and ID are required",
-                          snackPosition: SnackPosition.BOTTOM,
-                        );
-                        return;
-                      }
-
-                      // Handle ID as number or string
-                      dynamic finalId =
-                          int.tryParse(idCtrl.text.trim()) ??
-                          idCtrl.text.trim();
-
-                      final newItem = SongMasterItem(
-                        id: finalId,
-                        code: codeCtrl.text.trim(),
-                        category: categoryCtrl.text.trim(),
-                        source: sourceVal,
-                        name: nameCtrl.text.trim(),
-                      );
-
-                      if (isEdit && index != null) {
-                        controller.updateSongMasterItem(index, newItem);
-                      } else {
-                        controller.addSongMasterItem(newItem);
-                      }
-                      Get.back();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: theme.colorScheme.onPrimary,
-                    ),
-                    child: Text(isEdit ? "Save" : "Add"),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+      _SongMasterAddEditDialog(
+        item: item,
+        index: index,
+        onSave: (newItem) {
+          if (item != null && index != null) {
+            controller.updateSongMasterItem(index, newItem);
+          } else {
+            controller.addSongMasterItem(newItem);
+          }
+        },
       ),
     );
   }
@@ -261,7 +119,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Sound Library Database (SongMaster)",
+                  "Song Master",
                   style: theme.textTheme.titleLarge?.copyWith(
                     color: theme.colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
@@ -309,54 +167,26 @@ class _SongMasterSectionState extends State<SongMasterSection> {
           ),
           child: Row(
             children: [
-              // Search Input
-              Expanded(
-                flex: 2,
-                child: TextField(
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                    fontSize: 14,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: "Search sounds by name, category, or code...",
-                    hintStyle: TextStyle(
-                      color: theme.colorScheme.onSurface.withOpacity(0.38),
-                    ),
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: theme.colorScheme.onSurface.withOpacity(0.38),
-                      size: 20,
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.onSurface.withOpacity(0.02),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                  ),
-                  onChanged: (val) => searchQuery.value = val,
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Filter segment (All / System / Custom)
+              // Show System Sounds toggle
               Obx(
-                () => Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurface.withOpacity(0.02),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      _buildFilterChip(theme, "ALL", "All Sounds"),
-                      _buildFilterChip(theme, "SYS", "System"),
-                      _buildFilterChip(theme, "CUS", "Custom"),
-                    ],
-                  ),
+                () => Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Show System Sounds",
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Switch(
+                      value: showSystemSounds.value,
+                      onChanged: (val) => showSystemSounds.value = val,
+                      activeColor: theme.colorScheme.primary,
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -369,21 +199,9 @@ class _SongMasterSectionState extends State<SongMasterSection> {
           var list = controller.songMaster.asMap().entries.toList();
 
           // Apply filters
-          if (searchQuery.value.isNotEmpty) {
-            final query = searchQuery.value.toLowerCase();
-            list = list.where((entry) {
-              final item = entry.value;
-              return item.name.toLowerCase().contains(query) ||
-                  item.code.toLowerCase().contains(query) ||
-                  item.category.toLowerCase().contains(query) ||
-                  item.id.toString().toLowerCase().contains(query);
-            }).toList();
-          }
 
-          if (sourceFilter.value != "ALL") {
-            list = list
-                .where((entry) => entry.value.source == sourceFilter.value)
-                .toList();
+          if (!showSystemSounds.value) {
+            list = list.where((entry) => entry.value.source != "SYS").toList();
           }
 
           if (list.isEmpty) {
@@ -498,7 +316,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                         Text(
                           idx.toString(),
                           style: TextStyle(
-                            color: theme.colorScheme.onSurface.withOpacity(0.3),
+                            color: theme.colorScheme.onSurface,
                             fontSize: 13,
                           ),
                         ),
@@ -508,7 +326,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                           item.name,
                           style: TextStyle(
                             color: theme.colorScheme.onSurface,
-                            fontWeight: FontWeight.bold,
+                            // fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
@@ -538,12 +356,12 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                           ),
                           decoration: BoxDecoration(
                             color: item.source == 'SYS'
-                                ? const Color(0xFF6366F1).withOpacity(0.15)
+                                ? theme.colorScheme.primary.withOpacity(0.15)
                                 : const Color(0xFFF59E0B).withOpacity(0.15),
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
                               color: item.source == 'SYS'
-                                  ? const Color(0xFF6366F1)
+                                  ? theme.colorScheme.primary
                                   : const Color(0xFFF59E0B),
                               width: 0.5,
                             ),
@@ -552,7 +370,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                             item.source == 'SYS' ? 'SYSTEM' : 'CUSTOM',
                             style: TextStyle(
                               color: item.source == 'SYS'
-                                  ? const Color(0xFF818CF8)
+                                  ? theme.colorScheme.primary
                                   : const Color(0xFFFBBF24),
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
@@ -573,21 +391,22 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.edit_outlined,
-                                color: Color(0xFF6366F1),
+                                color: theme.colorScheme.primary,
                                 size: 18,
                               ),
                               onPressed: () => _showAddEditDialog(item, idx),
                             ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                color: Colors.redAccent,
-                                size: 18,
+                            if (item.source != 'SYS')
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.redAccent,
+                                  size: 18,
+                                ),
+                                onPressed: () => _confirmDelete(idx, item),
                               ),
-                              onPressed: () => _confirmDelete(idx, item),
-                            ),
                           ],
                         ),
                       ),
@@ -601,26 +420,611 @@ class _SongMasterSectionState extends State<SongMasterSection> {
       ],
     );
   }
+}
 
-  Widget _buildFilterChip(ThemeData theme, String val, String label) {
-    final isSelected = sourceFilter.value == val;
-    return InkWell(
-      onTap: () => sourceFilter.value = val,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? theme.colorScheme.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+class _SongMasterAddEditDialog extends StatefulWidget {
+  final SongMasterItem? item;
+  final int? index;
+  final Function(SongMasterItem) onSave;
+
+  const _SongMasterAddEditDialog({this.item, this.index, required this.onSave});
+
+  @override
+  State<_SongMasterAddEditDialog> createState() =>
+      _SongMasterAddEditDialogState();
+}
+
+class _SongMasterAddEditDialogState extends State<_SongMasterAddEditDialog> {
+  late TextEditingController nameCtrl;
+  late TextEditingController categoryCtrl;
+  late TextEditingController idCtrl;
+  late TextEditingController fileNameCtrl;
+
+  String selectedPlaybackMode = 'Single';
+  String sourceVal = 'CUS';
+
+  @override
+  void initState() {
+    super.initState();
+    final item = widget.item;
+    nameCtrl = TextEditingController(text: item?.name ?? '');
+    categoryCtrl = TextEditingController(text: item?.category ?? '');
+    idCtrl = TextEditingController(text: item?.id?.toString() ?? '1');
+    sourceVal = item?.source ?? 'CUS';
+
+    final initialCode = item?.code ?? '';
+    final isSystemMode =
+        initialCode == 'LP' ||
+        initialCode == 'hr' ||
+        initialCode == 'dw' ||
+        initialCode == 'LPW';
+
+    selectedPlaybackMode = isSystemMode ? initialCode : 'Single';
+    fileNameCtrl = TextEditingController(text: isSystemMode ? '' : initialCode);
+  }
+
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    categoryCtrl.dispose();
+    idCtrl.dispose();
+    fileNameCtrl.dispose();
+    super.dispose();
+  }
+
+  final ConfigController controller = Get.find<ConfigController>();
+
+  Future<void> _selectFolder() async {
+    final masterLoc = controller.qtronFolder.value;
+    if (masterLoc.isEmpty) {
+      Get.snackbar(
+        'QTRON Folder',
+        'No QTRON master location detected or set. Enter storage folder manually.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orangeAccent,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    try {
+      final subfolders = await FileHelper.getSubfolders(masterLoc);
+      subfolders.removeWhere((f) => f.startsWith('@'));
+
+      if (subfolders.isEmpty) {
+        Get.snackbar(
+          'QTRON Folder',
+          'No subfolders found in $masterLoc. Please create folders in it first.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orangeAccent,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      final theme = Get.theme;
+      final String? selected = await Get.dialog<String>(
+        AlertDialog(
+          backgroundColor: theme.colorScheme.surface,
+          title: Text(
+            'Select Storage Folder',
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
+          content: SizedBox(
+            width: 300,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: subfolders.length,
+              itemBuilder: (context, index) {
+                final folder = subfolders[index];
+                return ListTile(
+                  title: Text(
+                    folder,
+                    style: TextStyle(color: theme.colorScheme.onSurface),
+                  ),
+                  onTap: () => Get.back(result: folder),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ),
+          ],
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected
-                ? theme.colorScheme.onPrimary
-                : theme.colorScheme.onSurface.withOpacity(0.6),
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            fontSize: 12,
+      );
+
+      if (selected != null) {
+        setState(() {
+          categoryCtrl.text = selected;
+          fileNameCtrl.clear();
+        });
+
+        final separator = masterLoc.contains('\\') ? '\\' : '/';
+        final folderPath = '$masterLoc$separator$selected';
+        final fileCount = await FileHelper.getFileCount(folderPath);
+        setState(() {
+          idCtrl.text = fileCount.toString();
+        });
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to retrieve subfolders or file count: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Future<void> _selectSingleFile() async {
+    final masterLoc = controller.qtronFolder.value;
+    final folder = categoryCtrl.text.trim();
+    if (masterLoc.isEmpty || folder.isEmpty) {
+      Get.snackbar(
+        'Storage Folder',
+        'Please set the QTRON folder and select a storage folder first.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orangeAccent,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    try {
+      final separator = masterLoc.contains('\\') ? '\\' : '/';
+      final folderPath = '$masterLoc$separator$folder';
+      final files = await FileHelper.getFiles(folderPath);
+
+      if (files.isEmpty) {
+        Get.snackbar(
+          'Files',
+          'No files found in $folderPath',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orangeAccent,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      final theme = Get.theme;
+      final String? selectedFile = await Get.dialog<String>(
+        AlertDialog(
+          backgroundColor: theme.colorScheme.surface,
+          title: Text(
+            'Select File',
+            style: TextStyle(color: theme.colorScheme.onSurface),
+          ),
+          content: SizedBox(
+            width: 300,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: files.length,
+              itemBuilder: (context, index) {
+                final file = files[index];
+                return ListTile(
+                  title: Text(
+                    file,
+                    style: TextStyle(color: theme.colorScheme.onSurface),
+                  ),
+                  onTap: () => Get.back(result: file),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (selectedFile != null) {
+        setState(() {
+          fileNameCtrl.text = selectedFile;
+        });
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to retrieve files: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isEdit = widget.item != null;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: 500,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: theme.colorScheme.onSurface.withOpacity(0.08),
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isEdit ? "Edit Sound Library Item" : "Add Sound Library Item",
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Song Title / Description
+              Text(
+                'Song Title / Description',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: nameCtrl,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontSize: 14,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'e.g. Morning Prayer',
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.music_note_rounded,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Storage Folder and File Count side-by-side
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Storage Folder',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Obx(() {
+                          final hasMaster =
+                              controller.qtronFolder.value.isNotEmpty;
+                          return TextField(
+                            controller: categoryCtrl,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                              fontSize: 14,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Folder Name',
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.folder_open_rounded,
+                                size: 18,
+                                color: theme.colorScheme.primary,
+                              ),
+                              suffixIcon: hasMaster
+                                  ? IconButton(
+                                      icon: const Icon(
+                                        Icons.arrow_drop_down_circle_outlined,
+                                        size: 18,
+                                      ),
+                                      onPressed: _selectFolder,
+                                      tooltip:
+                                          'Select folder from Removable Drive',
+                                    )
+                                  : null,
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'File Count',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: idCtrl,
+                          keyboardType: TextInputType.number,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontSize: 14,
+                          ),
+                          decoration: InputDecoration(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.numbers_rounded,
+                              size: 18,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Playback Mode Dropdown
+              Text(
+                'Playback Mode',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: selectedPlaybackMode,
+                dropdownColor: theme.colorScheme.surface,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.play_circle_outline_rounded,
+                    size: 20,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'Single',
+                    child: Text('Play Single File'),
+                  ),
+                  DropdownMenuItem(value: 'LP', child: Text('Loop All Files')),
+                  DropdownMenuItem(
+                    value: 'hr',
+                    child: Text('Hour Wise (1-24)'),
+                  ),
+                  DropdownMenuItem(value: 'dw', child: Text('Day Wise (1-7)')),
+                  DropdownMenuItem(
+                    value: 'LPW',
+                    child: Text('Day Specific Folders'),
+                  ),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      selectedPlaybackMode = val;
+                    });
+                  }
+                },
+              ),
+
+              // Single File Name Input (shown if playback mode is 'Single')
+              if (selectedPlaybackMode == 'Single') ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Single File Name',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Obx(() {
+                  final hasMaster = controller.qtronFolder.value.isNotEmpty;
+                  return TextField(
+                    controller: fileNameCtrl,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontSize: 14,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'e.g. morning.mp3',
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.audio_file_rounded,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
+                      suffixIcon: hasMaster
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.music_video_outlined,
+                                size: 18,
+                              ),
+                              onPressed: _selectSingleFile,
+                              tooltip: 'Select file from Removable Drive',
+                            )
+                          : null,
+                    ),
+                  );
+                }),
+              ],
+              const SizedBox(height: 16),
+
+              // Source Type Dropdown
+              Text(
+                'Source Type',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: sourceVal,
+                dropdownColor: theme.colorScheme.surface,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.settings_input_component_rounded,
+                    size: 20,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(value: "SYS", child: Text("System (SYS)")),
+                  DropdownMenuItem(value: "CUS", child: Text("Custom (CUS)")),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      sourceVal = val;
+                    });
+                  }
+                },
+              ),
+
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: Text(
+                      "Cancel",
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      final name = nameCtrl.text.trim();
+                      final folder = categoryCtrl.text.trim();
+                      final fileCountStr = idCtrl.text.trim();
+
+                      if (name.isEmpty ||
+                          folder.isEmpty ||
+                          fileCountStr.isEmpty) {
+                        Get.snackbar(
+                          "Error",
+                          "All fields are required",
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: Colors.redAccent,
+                          colorText: Colors.white,
+                        );
+                        return;
+                      }
+
+                      final fileCount = int.tryParse(fileCountStr) ?? 1;
+
+                      final code = selectedPlaybackMode == 'Single'
+                          ? fileNameCtrl.text.trim()
+                          : selectedPlaybackMode;
+
+                      if (selectedPlaybackMode == 'Single' && code.isEmpty) {
+                        Get.snackbar(
+                          "Error",
+                          "Single file name is required for Single mode",
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: Colors.redAccent,
+                          colorText: Colors.white,
+                        );
+                        return;
+                      }
+
+                      final newItem = SongMasterItem(
+                        id: fileCount,
+                        code: code,
+                        category: folder,
+                        source: sourceVal,
+                        name: name,
+                      );
+
+                      widget.onSave(newItem);
+                      Get.back();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(isEdit ? "Save" : "Add"),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

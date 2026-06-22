@@ -12,6 +12,14 @@ class AlarmsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final subtitleColor = isDark
+        ? theme.colorScheme.onSurface.withOpacity(0.6)
+        : theme.colorScheme.onSurface.withOpacity(0.85);
+    final hintColor = isDark
+        ? theme.colorScheme.onSurface.withOpacity(0.38)
+        : theme.colorScheme.onSurface.withOpacity(0.65);
+
     return Padding(
       padding: const EdgeInsets.all(32.0),
       child: Column(
@@ -35,7 +43,7 @@ class AlarmsScreen extends StatelessWidget {
                   Text(
                     "Drag items to reorder priority, click edit to modify timing rules or sequence tracks.",
                     style: TextStyle(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: subtitleColor,
                       fontSize: 13,
                     ),
                   ),
@@ -73,7 +81,7 @@ class AlarmsScreen extends StatelessWidget {
                     icon: const Icon(Icons.add, size: 18),
                     label: const Text("Add New Alarm"),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366F1),
+                      backgroundColor: theme.colorScheme.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 18,
@@ -115,7 +123,7 @@ class AlarmsScreen extends StatelessWidget {
                       Text(
                         "No alarms configured",
                         style: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          color: subtitleColor,
                           fontSize: 16,
                         ),
                       ),
@@ -123,7 +131,7 @@ class AlarmsScreen extends StatelessWidget {
                       Text(
                         "Click the button at top right to build your first alarm schedule",
                         style: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.38),
+                          color: hintColor,
                           fontSize: 13,
                         ),
                       ),
@@ -153,6 +161,14 @@ class AlarmsScreen extends StatelessWidget {
     int index,
     ThemeData theme,
   ) {
+    final isDark = theme.brightness == Brightness.dark;
+    final subtitleColor = isDark
+        ? theme.colorScheme.onSurface.withOpacity(0.6)
+        : theme.colorScheme.onSurface.withOpacity(0.85);
+    final hintColor = isDark
+        ? theme.colorScheme.onSurface.withOpacity(0.38)
+        : theme.colorScheme.onSurface.withOpacity(0.65);
+
     // Generate beautiful readable schedule details
     final activeDays = alarm.weekdays;
     String dayString = "";
@@ -165,6 +181,13 @@ class AlarmsScreen extends StatelessWidget {
       dayString = activeDays.map((d) => daysNames[d - 1]).join(', ');
     }
 
+    String formatHour(int hr) {
+      final isPm = hr >= 12;
+      final displayHour = hr % 12 == 0 ? 12 : hr % 12;
+      final suffix = isPm ? 'PM' : 'AM';
+      return '$displayHour $suffix';
+    }
+
     final hourRangesList = alarm.hourRanges;
     String hourString = "";
     if (hourRangesList.isEmpty) {
@@ -173,11 +196,9 @@ class AlarmsScreen extends StatelessWidget {
       hourString = hourRangesList
           .map((range) {
             if (range.length == 2) {
-              final start = range[0].toString().padLeft(2, '0');
-              final end = range[1].toString().padLeft(2, '0');
-              return "$start:00-$end:00";
+              return "${formatHour(range[0])} - ${formatHour(range[1])}";
             } else if (range.length == 1) {
-              return "${range[0].toString().padLeft(2, '0')}:00";
+              return formatHour(range[0]);
             }
             return "";
           })
@@ -219,12 +240,12 @@ class AlarmsScreen extends StatelessWidget {
               height: 48,
               decoration: BoxDecoration(
                 color: alarm.state
-                    ? const Color(0xFF10B981).withOpacity(0.1)
+                    ? theme.colorScheme.secondary.withOpacity(0.1)
                     : theme.colorScheme.onSurface.withOpacity(0.05),
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: alarm.state
-                      ? const Color(0xFF10B981)
+                      ? theme.colorScheme.secondary
                       : theme.colorScheme.onSurface.withOpacity(0.2),
                   width: 1,
                 ),
@@ -233,7 +254,7 @@ class AlarmsScreen extends StatelessWidget {
                 child: Icon(
                   Icons.alarm,
                   color: alarm.state
-                      ? const Color(0xFF10B981)
+                      ? theme.colorScheme.secondary
                       : theme.colorScheme.onSurface.withOpacity(0.38),
                   size: 22,
                 ),
@@ -273,9 +294,7 @@ class AlarmsScreen extends StatelessWidget {
                           child: Text(
                             alarm.id!,
                             style: TextStyle(
-                              color: theme.colorScheme.onSurface.withOpacity(
-                                0.6,
-                              ),
+                              color: subtitleColor,
                               fontSize: 10,
                               fontFamily: 'monospace',
                             ),
@@ -289,28 +308,28 @@ class AlarmsScreen extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.calendar_today,
-                        color: theme.colorScheme.onSurface.withOpacity(0.38),
+                        color: hintColor,
                         size: 12,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         dayString,
                         style: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          color: subtitleColor,
                           fontSize: 12,
                         ),
                       ),
                       const SizedBox(width: 16),
                       Icon(
                         Icons.access_time,
-                        color: theme.colorScheme.onSurface.withOpacity(0.38),
+                        color: hintColor,
                         size: 12,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         "Hours: $hourString (Min: $minStr)",
                         style: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          color: subtitleColor,
                           fontSize: 12,
                         ),
                       ),
@@ -341,12 +360,12 @@ class AlarmsScreen extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: source == "SYS"
-                                ? const Color(0xFF6366F1).withOpacity(0.08)
+                                ? theme.colorScheme.primary.withOpacity(0.08)
                                 : const Color(0xFFF59E0B).withOpacity(0.08),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
                               color: source == "SYS"
-                                  ? const Color(0xFF6366F1).withOpacity(0.3)
+                                  ? theme.colorScheme.primary.withOpacity(0.3)
                                   : const Color(0xFFF59E0B).withOpacity(0.3),
                               width: 0.5,
                             ),
@@ -355,7 +374,7 @@ class AlarmsScreen extends StatelessWidget {
                             songName,
                             style: TextStyle(
                               color: source == "SYS"
-                                  ? const Color(0xFF818CF8)
+                                  ? theme.colorScheme.primary
                                   : const Color(0xFFFBBF24),
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
@@ -374,7 +393,7 @@ class AlarmsScreen extends StatelessWidget {
               children: [
                 Switch(
                   value: alarm.state,
-                  activeColor: const Color(0xFF10B981),
+                  activeColor: theme.colorScheme.secondary,
                   onChanged: (val) {
                     final updated = alarm.copyWith(state: val);
                     controller.updateAlarm(index, updated);
@@ -382,9 +401,9 @@ class AlarmsScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.edit_outlined,
-                    color: Color(0xFF6366F1),
+                    color: theme.colorScheme.primary,
                   ),
                   onPressed: () {
                     Get.dialog(AlarmEditorDialog(alarm: alarm, index: index));

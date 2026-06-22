@@ -17,7 +17,6 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
   final ConfigController controller = Get.find<ConfigController>();
 
   late TextEditingController titleController;
-  late TextEditingController idController;
   late bool stateValue;
   late Set<int> selectedHours;
   late Set<int> selectedWeekdays;
@@ -36,7 +35,6 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
     super.initState();
     final alarm = widget.alarm;
     titleController = TextEditingController(text: alarm?.tit ?? '');
-    idController = TextEditingController(text: alarm?.id ?? '');
     stateValue = alarm?.state ?? true;
 
     // Parse times
@@ -77,7 +75,6 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
   @override
   void dispose() {
     titleController.dispose();
-    idController.dispose();
     super.dispose();
   }
 
@@ -142,7 +139,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
 
     final newAlarm = AlarmConfig(
       tit: titleController.text.trim(),
-      id: idController.text.trim().isEmpty ? null : idController.text.trim(),
+      id: widget.alarm?.id,
       state: stateValue,
       tim: newTim,
       sc: selectedSC,
@@ -234,20 +231,10 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                     Row(
                       children: [
                         Expanded(
-                          flex: 3,
                           child: _buildTextField(
-                            label: "Alarm Title (tit)",
+                            label: "Alarm Title / Name",
                             controller: titleController,
                             hint: "e.g., Subrabatham",
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          flex: 2,
-                          child: _buildTextField(
-                            label: "Alarm ID (id, optional)",
-                            controller: idController,
-                            hint: "e.g., time795",
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -267,7 +254,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                             const SizedBox(height: 8),
                             Switch(
                               value: stateValue,
-                              activeColor: const Color(0xFF10B981),
+                              activeColor: theme.colorScheme.secondary,
                               inactiveThumbColor: Colors.grey,
                               inactiveTrackColor: theme.colorScheme.onSurface
                                   .withOpacity(0.15),
@@ -334,7 +321,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                     _buildHoursGrid(),
                     const SizedBox(height: 24),
 
-                    // Date & Time specific fields
+                    // Date & Time specific fields (Disabled)
                     Row(
                       children: [
                         Expanded(
@@ -344,6 +331,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                             min: 0,
                             max: 59,
                             onChanged: (val) => setState(() => startMin = val),
+                            enabled: false,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -354,6 +342,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                             min: 0,
                             max: 59,
                             onChanged: (val) => setState(() => endMin = val),
+                            enabled: false,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -364,6 +353,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                             min: 1,
                             max: 31,
                             onChanged: (val) => setState(() => startDay = val),
+                            enabled: false,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -374,6 +364,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                             min: 1,
                             max: 31,
                             onChanged: (val) => setState(() => endDay = val),
+                            enabled: false,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -385,6 +376,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                             max: 12,
                             onChanged: (val) =>
                                 setState(() => startMonth = val),
+                            enabled: false,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -395,6 +387,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                             min: 1,
                             max: 12,
                             onChanged: (val) => setState(() => endMonth = val),
+                            enabled: false,
                           ),
                         ),
                       ],
@@ -484,7 +477,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF6366F1),
+                                  color: theme.colorScheme.primary,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Row(
@@ -648,6 +641,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
     required int min,
     required int max,
     required ValueChanged<int> onChanged,
+    bool enabled = true,
   }) {
     final theme = Theme.of(context);
     return Column(
@@ -656,7 +650,9 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
         Text(
           label,
           style: TextStyle(
-            color: theme.colorScheme.onSurface.withOpacity(0.7),
+            color: enabled
+                ? theme.colorScheme.onSurface.withOpacity(0.7)
+                : theme.colorScheme.onSurface.withOpacity(0.38),
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
@@ -665,7 +661,9 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
-            color: theme.colorScheme.onSurface.withOpacity(0.05),
+            color: enabled
+                ? theme.colorScheme.onSurface.withOpacity(0.05)
+                : theme.colorScheme.onSurface.withOpacity(0.01),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -674,7 +672,9 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
               Text(
                 value.toString(),
                 style: TextStyle(
-                  color: theme.colorScheme.onSurface,
+                  color: enabled
+                      ? theme.colorScheme.onSurface
+                      : theme.colorScheme.onSurface.withOpacity(0.38),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -684,26 +684,34 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                   IconButton(
                     icon: Icon(
                       Icons.arrow_drop_up,
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: enabled
+                          ? theme.colorScheme.onSurface.withOpacity(0.7)
+                          : theme.colorScheme.onSurface.withOpacity(0.2),
                       size: 16,
                     ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
-                    onPressed: () {
-                      if (value < max) onChanged(value + 1);
-                    },
+                    onPressed: enabled
+                        ? () {
+                            if (value < max) onChanged(value + 1);
+                          }
+                        : null,
                   ),
                   IconButton(
                     icon: Icon(
                       Icons.arrow_drop_down,
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: enabled
+                          ? theme.colorScheme.onSurface.withOpacity(0.7)
+                          : theme.colorScheme.onSurface.withOpacity(0.2),
                       size: 16,
                     ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
-                    onPressed: () {
-                      if (value > min) onChanged(value - 1);
-                    },
+                    onPressed: enabled
+                        ? () {
+                            if (value > min) onChanged(value - 1);
+                          }
+                        : null,
                   ),
                 ],
               ),
@@ -784,7 +792,10 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
       itemCount: 24,
       itemBuilder: (context, idx) {
         final isSelected = selectedHours.contains(idx);
-        final hourStr = idx.toString().padLeft(2, '0');
+        final isPm = idx >= 12;
+        final displayHour = idx % 12 == 0 ? 12 : idx % 12;
+        final suffix = isPm ? 'PM' : 'AM';
+        final hourStr = '$displayHour $suffix';
         return InkWell(
           onTap: () {
             setState(() {
@@ -814,7 +825,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                 style: TextStyle(
                   color: isSelected
                       ? theme.colorScheme.onSurface
-                      : theme.colorScheme.onSurface.withOpacity(0.6),
+                      : theme.colorScheme.onSurface.withOpacity(0.9),
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   fontSize: 12,
                 ),
@@ -851,7 +862,6 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
     }
 
     return Container(
-      height: 220,
       decoration: BoxDecoration(
         color: theme.colorScheme.onSurface.withOpacity(0.01),
         borderRadius: BorderRadius.circular(12),
@@ -859,9 +869,10 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
           color: theme.colorScheme.onSurface.withOpacity(0.08),
         ),
       ),
+      padding: const EdgeInsets.all(12),
       child: ReorderableListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         onReorder: (oldIndex, newIndex) {
           setState(() {
             if (newIndex > oldIndex) newIndex -= 1;
@@ -871,7 +882,6 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
         },
         children: List.generate(selectedSC.length, (idx) {
           final smIndex = selectedSC[idx];
-          // Check bounds in case master changed
           final item = (smIndex >= 0 && smIndex < controller.songMaster.length)
               ? controller.songMaster[smIndex]
               : SongMasterItem(
@@ -882,94 +892,73 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                   name: 'Unknown',
                 );
 
-          return Container(
+          return Card(
             key: ValueKey("sc_$idx"),
-            width: 140,
-            margin: const EdgeInsets.symmetric(horizontal: 6),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.cardTheme.color,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
+            margin: const EdgeInsets.only(bottom: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(
                 color: theme.colorScheme.onSurface.withOpacity(0.08),
               ),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: item.source == 'SYS'
-                            ? const Color(0xFF6366F1)
-                            : const Color(0xFFF59E0B),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        item.source,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close,
-                        color: theme.colorScheme.onSurface.withOpacity(0.3),
-                        size: 16,
-                      ),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () {
-                        setState(() {
-                          selectedSC.removeAt(idx);
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        item.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurface,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item.category,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.38),
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
+            child: ListTile(
+              dense: true,
+              leading: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.drag_handle,
+                    color: theme.colorScheme.onSurface.withOpacity(0.3),
                   ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: item.source == 'SYS'
+                          ? theme.colorScheme.primary
+                          : const Color(0xFFF59E0B),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      item.source,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              title: Text(
+                item.name,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontSize: 12,
                 ),
-                Icon(
-                  Icons.drag_handle,
-                  color: theme.colorScheme.onSurface.withOpacity(0.3),
+              ),
+              subtitle: Text(
+                "Code: ${item.code} | Category: ${item.category}",
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  fontSize: 10,
+                ),
+              ),
+              trailing: IconButton(
+                icon: const Icon(
+                  Icons.remove_circle_outline,
+                  color: Colors.redAccent,
                   size: 18,
                 ),
-              ],
+                onPressed: () {
+                  setState(() {
+                    selectedSC.removeAt(idx);
+                  });
+                },
+              ),
             ),
           );
         }),

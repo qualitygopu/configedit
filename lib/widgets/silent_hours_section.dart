@@ -18,6 +18,13 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
     controller.addSilentHour([startHour, endHour]);
   }
 
+  String _formatHour(int hr) {
+    final isPm = hr >= 12;
+    final displayHour = hr % 12 == 0 ? 12 : hr % 12;
+    final suffix = isPm ? 'PM' : 'AM';
+    return '$displayHour $suffix';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -100,7 +107,7 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
                         items: List.generate(
                           24,
                           (i) =>
-                              DropdownMenuItem(value: i, child: Text("$i:00")),
+                              DropdownMenuItem(value: i, child: Text(_formatHour(i))),
                         ),
                         onChanged: (val) =>
                             setState(() => startHour = val ?? 22),
@@ -143,7 +150,7 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
                         items: List.generate(
                           24,
                           (i) =>
-                              DropdownMenuItem(value: i, child: Text("$i:00")),
+                              DropdownMenuItem(value: i, child: Text(_formatHour(i))),
                         ),
                         onChanged: (val) => setState(() => endHour = val ?? 6),
                       ),
@@ -156,7 +163,7 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text("Add Silent Period"),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6366F1),
+                    backgroundColor: theme.colorScheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
@@ -226,9 +233,9 @@ class _SilentHoursSectionState extends State<SilentHoursSection> {
                 final isRange = item is List;
                 String title = "";
                 if (isRange) {
-                  title = "Muted from ${item[0]}:00 to ${item[1]}:00";
+                  title = "Muted from ${_formatHour(item[0])} to ${_formatHour(item[1])}";
                 } else {
-                  title = "Muted at ${item}:00";
+                  title = "Muted at ${_formatHour(item)}";
                 }
 
                 return Container(

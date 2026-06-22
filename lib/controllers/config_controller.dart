@@ -5,7 +5,9 @@ import '../models/config_model.dart';
 import '../utils/file_helper.dart';
 
 class ConfigController extends GetxController {
-  final Rx<ThemeMode> themeMode = ThemeMode.dark.obs;
+  final Rx<ThemeMode> themeMode = ThemeMode.light.obs;
+  final RxString themeStyle = "Classic".obs; // "Modern" or "Classic"
+  final RxString fontSize = "Normal".obs; // "Normal" or "Reduced"
   final Rxn<Config> config = Rxn<Config>();
   final RxList<AlarmConfig> alarms = <AlarmConfig>[].obs;
   final RxList<dynamic> silentHours = <dynamic>[].obs;
@@ -14,6 +16,7 @@ class ConfigController extends GetxController {
   final RxString rawJson = "".obs;
   final RxString errorMessage = "".obs;
   final RxBool isModified = false.obs;
+  final RxString qtronFolder = "".obs;
 
   void toggleTheme() {
     if (themeMode.value == ThemeMode.dark) {
@@ -25,13 +28,22 @@ class ConfigController extends GetxController {
     }
   }
 
+  void toggleThemeStyle() {
+    themeStyle.value = themeStyle.value == "Modern" ? "Classic" : "Modern";
+  }
+
+  void toggleFontSize() {
+    fontSize.value = fontSize.value == "Normal" ? "Reduced" : "Normal";
+  }
+
   static const String defaultJson =
       r'''{"AlarmConfig":[{"tit":"subrabatham","id":null,"state":true,"tim":[[0,0],[[5,5]],[[1,31]],[[1,12]],[1,2,3,4,5,6,7],[0]],"SC":[0,1,2,3,4,5,12],"type":"time"},{"tit":"time with Panchagam","id":null,"state":true,"tim":[[0,0],[[6,6],[8,8],[10,10]],[[1,31]],[[1,12]],[1,2,3,4,5,6,7],[0]],"SC":[0,1,2,3,4,5,6,7,8,9,10],"type":"time"},{"tit":"time with song","id":"time795","state":true,"tim":[[0,0],[[6,8],[17,19]],[[1,31]],[[1,12]],[1,2,3,4,5,6,7],[0]],"SC":[0,1,2,3,4,5,10],"type":"time"},{"tit":"time with quotes","id":null,"state":true,"tim":[[0,0],[[6,22]],[[1,31]],[[1,12]],[1,2,3,4,5,6,7],[0]],"SC":[0,1,2,3,4,5,11],"type":"time"}],"silentHours":[],"SongMaster":[[24,"hr","SS","SYS","மந்திரம்"],[24,"hr","VO","SYS","ஆலயம் பெயர்"],[24,"hr","HR/HWB","SYS","மணி"],[12,"mo","MO","SYS","ஆங்கில தேதி"],[31,"dt","DT","SYS","ஆங்கில தேதி"],[7,"dw","DW","SYS","ஆங்கில தேதி"],[366,"td","PN","SYS","தமிழ் தேதி"],[366,"tn","PN","SYS","திதி நட்சத்திரம்"],[7,"dw","NN","SYS","நல்லநேரம்"],[100,"sd","PN","SYS","விரத தினம்"],[100,"LP","SN1","CUS","பாடல் 1"],[762,"LP","QU","CUS","Quotes"],[12,"Vinayagar Suprabatham","SP","CUS","Subrapatham"]],"Playlists":[]}''';
 
   @override
   void onInit() {
     super.onInit();
-    loadDefault();
+    // loadDefault();
+    detectAndSetQtronFolder();
   }
 
   // Load from a raw JSON string (supporting both raw JSON and base64 encoded JSON)
@@ -75,9 +87,56 @@ class ConfigController extends GetxController {
     loadConfig(defaultJson);
   }
 
+  Future<void> detectAndSetQtronFolder() async {
+    final path = await FileHelper.findAndAddQtronDirectory();
+    if (path != null) {
+      qtronFolder.value = path;
+    } else {
+      qtronFolder.value = "";
+    }
+  }
+
+  Future<void> manualSelectQtronFolder() async {
+    final selectedDirectory = await FileHelper.selectDirectory();
+    if (selectedDirectory != null) {
+      var path = selectedDirectory;
+      final parts = path.split(path.contains('\\') ? '\\' : '/');
+      final dirName = parts.last;
+      if (dirName != '_QTRON') {
+        final separator = path.contains('\\') ? '\\' : '/';
+        final subDirPath = '$path${separator}_QTRON';
+        if (await FileHelper.getSubfolders(
+          path,
+        ).then((folders) => folders.contains('_QTRON'))) {
+          path = subDirPath;
+        } else {
+          qtronFolder.value = path;
+          Get.snackbar(
+            "Master Location Saved",
+            "Set master location to: $path",
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.blueAccent,
+            colorText: Colors.white,
+          );
+          return;
+        }
+      }
+      qtronFolder.value = path;
+      Get.snackbar(
+        "Master Location Saved",
+        "Set master location to: $path",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.blueAccent,
+        colorText: Colors.white,
+      );
+    }
+  }
+
   // Pick and load file
   Future<void> loadFromFile() async {
-    final fileContent = await FileHelper.loadFile();
+    final fileContent = await FileHelper.loadFile(
+      qtronDir: qtronFolder.value.isNotEmpty ? qtronFolder.value : null,
+    );
     if (fileContent != null && fileContent.trim().isNotEmpty) {
       loadConfig(fileContent);
     }
@@ -94,7 +153,31 @@ class ConfigController extends GetxController {
     // Convert JSON to Base64
     final base64String = base64.encode(utf8.encode(jsonString));
 
-    await FileHelper.saveFile(base64String, "timeAnnounce.qtr");
+    await FileHelper.saveFile(
+      base64String,
+      "timeAnnounce.qtr",
+      qtronDir: qtronFolder.value.isNotEmpty ? qtronFolder.value : null,
+    );
+    isModified.value = false;
+  }
+
+  // Export/Save file as Base64 encoded with prompt
+  Future<void> saveAsToFile() async {
+    if (config.value == null) return;
+    refreshRawJson();
+
+    final jsonString = const JsonEncoder.withIndent(
+      '  ',
+    ).convert(config.value!.toJson());
+    // Convert JSON to Base64
+    final base64String = base64.encode(utf8.encode(jsonString));
+
+    await FileHelper.saveFile(
+      base64String,
+      "timeAnnounce.qtr",
+      qtronDir: qtronFolder.value.isNotEmpty ? qtronFolder.value : null,
+      isSaveAs: true,
+    );
     isModified.value = false;
   }
 
