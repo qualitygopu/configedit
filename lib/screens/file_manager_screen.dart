@@ -383,27 +383,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                   ),
                 ),
               ),
-            if (controller.currentPath.value.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final selected = await FileHelper.selectDirectory();
-                    if (selected != null) {
-                      controller.backupFolderPath.value = selected;
-                    }
-                  },
-                  icon: const Icon(Icons.backup, size: 16),
-                  label: Obx(() {
-                    final folder = controller.backupFolderPath.value;
-                    return Text(
-                      folder.isEmpty
-                          ? 'Backup Path'
-                          : 'Backup: ${folder.split(Platform.pathSeparator).last}',
-                    );
-                  }),
-                ),
-              ),
+
             if (controller.currentPath.value.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(right: 8),

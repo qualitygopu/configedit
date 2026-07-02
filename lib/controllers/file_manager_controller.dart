@@ -520,9 +520,16 @@ class FileManagerController extends GetxController {
   Future<void> _backupCopyTasksToPath(String directory) async {
     if (directory.isEmpty) return;
     try {
-      final backupPath =
+      String backupPath =
           '$directory${Platform.pathSeparator}filecopy_copy.json';
-      final file = File(backupPath);
+      var file = File(backupPath);
+      int counter = 1;
+      while (await file.exists()) {
+        backupPath =
+            '$directory${Platform.pathSeparator}filecopy_copy_$counter.json';
+        file = File(backupPath);
+        counter++;
+      }
       final encoder = const JsonEncoder.withIndent('  ');
       await file.writeAsString(
         encoder.convert(copyTasks.map((task) => task.toJson()).toList()),
@@ -533,21 +540,19 @@ class FileManagerController extends GetxController {
   Future<void> executeCopyTasks() async {
     if (copyTasks.isEmpty) return;
 
-    if (backupFolderPath.value.isEmpty) {
-      final selected = await FileHelper.selectDirectory();
-      if (selected == null) {
-        Get.snackbar(
-          'Backup Cancelled',
-          'Copy tasks execution aborted because backup folder was not selected',
-          backgroundColor: Colors.red.withValues(alpha: 0.9),
-          colorText: Colors.white,
-        );
-        return;
-      }
-      backupFolderPath.value = selected;
+    final selected = await FileHelper.selectDirectory();
+    if (selected == null) {
+      Get.snackbar(
+        'Backup Cancelled',
+        'Copy tasks execution aborted because backup folder was not selected',
+        backgroundColor: Colors.red.withValues(alpha: 0.9),
+        colorText: Colors.white,
+      );
+      return;
     }
+    backupFolderPath.value = selected;
 
-    await _backupCopyTasksToPath(backupFolderPath.value);
+    await _backupCopyTasksToPath(selected);
     final taskList = List<FileCopyTask>.from(copyTasks);
     taskTotalItems.value = taskList.fold<int>(
       0,
@@ -1382,17 +1387,25 @@ class FileManagerController extends GetxController {
 
         final dir = Directory(sourcePath);
         if (await dir.exists()) {
-          final sourceName = sourcePath.split(Platform.pathSeparator).last;
-          final uniqueName = _getUniqueFileName(
-            destinationFolderPath,
-            sourceName,
-            sourcePath,
-            existing,
-            localBuffer: entriesToAdd,
-          );
-          if (uniqueName.isNotEmpty) {
-            entriesToAdd.add([uniqueName, sourcePath]);
-          }
+          try {
+            await for (final entity in dir.list(recursive: true)) {
+              if (entity is File) {
+                final fileName = entity.path.split(Platform.pathSeparator).last;
+                if (fileName.startsWith('.')) continue;
+
+                final uniqueName = _getUniqueFileName(
+                  destinationFolderPath,
+                  fileName,
+                  entity.path,
+                  existing,
+                  localBuffer: entriesToAdd,
+                );
+                if (uniqueName.isNotEmpty) {
+                  entriesToAdd.add([uniqueName, entity.path]);
+                }
+              }
+            }
+          } catch (_) {}
         }
       } catch (_) {}
     }
