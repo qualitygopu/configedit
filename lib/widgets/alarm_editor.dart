@@ -885,10 +885,10 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
           final item = (smIndex >= 0 && smIndex < controller.songMaster.length)
               ? controller.songMaster[smIndex]
               : SongMasterItem(
-                  id: smIndex,
+                  count: smIndex,
                   code: 'ERR',
-                  category: 'ERR',
-                  source: 'ERR',
+                  folder: 'ERR',
+                  mode: 'ERR',
                   name: 'Unknown',
                 );
 
@@ -917,13 +917,13 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: item.source == 'SYS'
+                      color: item.mode == 'SYS'
                           ? theme.colorScheme.primary
                           : const Color(0xFFF59E0B),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      item.source,
+                      item.mode,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 8,
@@ -941,7 +941,7 @@ class _AlarmEditorDialogState extends State<AlarmEditorDialog> {
                 ),
               ),
               subtitle: Text(
-                "Code: ${item.code} | Category: ${item.category}",
+                "Code: ${item.code} | Category: ${item.folder}",
                 style: TextStyle(
                   color: theme.colorScheme.onSurface.withOpacity(0.5),
                   fontSize: 10,

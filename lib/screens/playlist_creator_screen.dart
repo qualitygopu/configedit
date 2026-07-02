@@ -424,7 +424,7 @@ class _PlaylistCreatorScreenState extends State<PlaylistCreatorScreen> {
                 matches = matches.where((e) {
                   return e.value.name.toLowerCase().contains(query) ||
                       e.value.code.toLowerCase().contains(query) ||
-                      e.value.category.toLowerCase().contains(query);
+                      e.value.folder.toLowerCase().contains(query);
                 }).toList();
               }
 
@@ -499,15 +499,15 @@ class _PlaylistCreatorScreenState extends State<PlaylistCreatorScreen> {
                                   vertical: 1,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: item.source == 'SYS'
+                                  color: item.mode == 'SYS'
                                       ? Colors.indigo.withOpacity(0.15)
                                       : Colors.orange.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(2),
                                 ),
                                 child: Text(
-                                  item.source,
+                                  item.mode,
                                   style: TextStyle(
-                                    color: item.source == 'SYS'
+                                    color: item.mode == 'SYS'
                                         ? Colors.indigoAccent
                                         : Colors.orangeAccent,
                                     fontSize: 7,
@@ -575,10 +575,10 @@ class _PlaylistCreatorScreenState extends State<PlaylistCreatorScreen> {
                       (smIndex >= 0 && smIndex < controller.songMaster.length)
                       ? controller.songMaster[smIndex]
                       : SongMasterItem(
-                          id: smIndex,
+                          count: smIndex,
                           code: 'ERR',
-                          category: 'ERR',
-                          source: 'ERR',
+                          folder: 'ERR',
+                          mode: 'ERR',
                           name: 'Unknown',
                         );
 
@@ -600,7 +600,7 @@ class _PlaylistCreatorScreenState extends State<PlaylistCreatorScreen> {
                         ),
                       ),
                       subtitle: Text(
-                        "Code: ${item.code} | Category: ${item.category}",
+                        "Code: ${item.code} | Category: ${item.folder}",
                         style: TextStyle(
                           color: theme.colorScheme.onSurface.withOpacity(0.5),
                           fontSize: 10,

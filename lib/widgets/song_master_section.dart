@@ -135,21 +135,42 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                 ),
               ],
             ),
-            ElevatedButton.icon(
-              onPressed: () => _showAddEditDialog(),
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text("Add New Sound"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                foregroundColor: theme.colorScheme.onPrimary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      controller.analyzeAndUpdateSongMasterCounts(),
+                  icon: const Icon(Icons.analytics_outlined, size: 18),
+                  label: const Text("Analyze counts"),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: () => _showAddEditDialog(),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text("Add New Sound"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -201,7 +222,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
           // Apply filters
 
           if (!showSystemSounds.value) {
-            list = list.where((entry) => entry.value.source != "SYS").toList();
+            list = list.where((entry) => entry.value.mode != "SYS").toList();
           }
 
           if (list.isEmpty) {
@@ -263,7 +284,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                   ),
                   DataColumn(
                     label: Text(
-                      "CODE",
+                      "TYPE",
                       style: TextStyle(
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
                         fontWeight: FontWeight.bold,
@@ -272,7 +293,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                   ),
                   DataColumn(
                     label: Text(
-                      "CATEGORY",
+                      "FOLDER",
                       style: TextStyle(
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
                         fontWeight: FontWeight.bold,
@@ -281,7 +302,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                   ),
                   DataColumn(
                     label: Text(
-                      "SOURCE",
+                      "MODE",
                       style: TextStyle(
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
                         fontWeight: FontWeight.bold,
@@ -290,7 +311,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                   ),
                   DataColumn(
                     label: Text(
-                      "ID/COUNT",
+                      "COUNT",
                       style: TextStyle(
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
                         fontWeight: FontWeight.bold,
@@ -340,7 +361,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                       ),
                       DataCell(
                         Text(
-                          item.category,
+                          item.folder,
                           style: TextStyle(
                             color: theme.colorScheme.onSurface.withOpacity(
                               0.38,
@@ -355,21 +376,21 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: item.source == 'SYS'
+                            color: item.mode == 'SYS'
                                 ? theme.colorScheme.primary.withOpacity(0.15)
                                 : const Color(0xFFF59E0B).withOpacity(0.15),
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
-                              color: item.source == 'SYS'
+                              color: item.mode == 'SYS'
                                   ? theme.colorScheme.primary
                                   : const Color(0xFFF59E0B),
                               width: 0.5,
                             ),
                           ),
                           child: Text(
-                            item.source == 'SYS' ? 'SYSTEM' : 'CUSTOM',
+                            item.mode == 'SYS' ? 'SYSTEM' : 'CUSTOM',
                             style: TextStyle(
-                              color: item.source == 'SYS'
+                              color: item.mode == 'SYS'
                                   ? theme.colorScheme.primary
                                   : const Color(0xFFFBBF24),
                               fontSize: 10,
@@ -380,7 +401,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                       ),
                       DataCell(
                         Text(
-                          item.id.toString(),
+                          item.count.toString(),
                           style: TextStyle(
                             color: theme.colorScheme.onSurface.withOpacity(0.7),
                           ),
@@ -398,7 +419,7 @@ class _SongMasterSectionState extends State<SongMasterSection> {
                               ),
                               onPressed: () => _showAddEditDialog(item, idx),
                             ),
-                            if (item.source != 'SYS')
+                            if (item.mode != 'SYS')
                               IconButton(
                                 icon: const Icon(
                                   Icons.delete_outline,
@@ -448,9 +469,9 @@ class _SongMasterAddEditDialogState extends State<_SongMasterAddEditDialog> {
     super.initState();
     final item = widget.item;
     nameCtrl = TextEditingController(text: item?.name ?? '');
-    categoryCtrl = TextEditingController(text: item?.category ?? '');
-    idCtrl = TextEditingController(text: item?.id?.toString() ?? '1');
-    sourceVal = item?.source ?? 'CUS';
+    categoryCtrl = TextEditingController(text: item?.folder ?? '');
+    idCtrl = TextEditingController(text: item?.count?.toString() ?? '1');
+    sourceVal = item?.mode ?? 'CUS';
 
     final initialCode = item?.code ?? '';
     final isSystemMode =
@@ -1003,10 +1024,10 @@ class _SongMasterAddEditDialogState extends State<_SongMasterAddEditDialog> {
                       }
 
                       final newItem = SongMasterItem(
-                        id: fileCount,
+                        count: fileCount,
                         code: code,
-                        category: folder,
-                        source: sourceVal,
+                        folder: folder,
+                        mode: sourceVal,
                         name: name,
                       );
 

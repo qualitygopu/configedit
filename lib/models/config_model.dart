@@ -1,30 +1,31 @@
 class SongMasterItem {
-  dynamic id; // Can be int (e.g. 24) or String (e.g. "Vinayagar Suprabatham")
+  dynamic
+  count; // Can be int (e.g. 24) or String (e.g. "Vinayagar Suprabatham")
   String code; // e.g. "hr", "mo"
-  String category; // e.g. "SS", "VO"
-  String source; // "SYS" or "CUS"
+  String folder; // e.g. "SS", "VO"
+  String mode; // "SYS" or "CUS"
   String name; // Localized name/label
 
   SongMasterItem({
-    required this.id,
+    required this.count,
     required this.code,
-    required this.category,
-    required this.source,
+    required this.folder,
+    required this.mode,
     required this.name,
   });
 
   factory SongMasterItem.fromList(List<dynamic> list) {
     return SongMasterItem(
-      id: list.isNotEmpty ? list[0] : 0,
+      count: list.isNotEmpty ? list[0] : 0,
       code: list.length > 1 ? list[1]?.toString() ?? '' : '',
-      category: list.length > 2 ? list[2]?.toString() ?? '' : '',
-      source: list.length > 3 ? list[3]?.toString() ?? '' : '',
+      folder: list.length > 2 ? list[2]?.toString() ?? '' : '',
+      mode: list.length > 3 ? list[3]?.toString() ?? '' : '',
       name: list.length > 4 ? list[4]?.toString() ?? '' : '',
     );
   }
 
   List<dynamic> toList() {
-    return [id, code, category, source, name];
+    return [count, code, folder, mode, name];
   }
 
   SongMasterItem copyWith({
@@ -35,10 +36,10 @@ class SongMasterItem {
     String? name,
   }) {
     return SongMasterItem(
-      id: id ?? this.id,
+      count: id ?? this.count,
       code: code ?? this.code,
-      category: category ?? this.category,
-      source: source ?? this.source,
+      folder: category ?? this.folder,
+      mode: source ?? this.mode,
       name: name ?? this.name,
     );
   }

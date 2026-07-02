@@ -355,7 +355,7 @@ class AlarmsScreen extends StatelessWidget {
                         final source =
                             (smIndex >= 0 &&
                                 smIndex < controller.songMaster.length)
-                            ? controller.songMaster[smIndex].source
+                            ? controller.songMaster[smIndex].mode
                             : "SYS";
                         return Container(
                           margin: const EdgeInsets.only(right: 8),

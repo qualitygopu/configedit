@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/config_model.dart';
@@ -147,9 +148,7 @@ class ConfigController extends GetxController {
     if (config.value == null) return;
     refreshRawJson();
 
-    final jsonString = const JsonEncoder.withIndent(
-      '  ',
-    ).convert(config.value!.toJson());
+    final jsonString = jsonEncode(config.value!.toJson());
     // Convert JSON to Base64
     final base64String = base64.encode(utf8.encode(jsonString));
 
@@ -166,9 +165,7 @@ class ConfigController extends GetxController {
     if (config.value == null) return;
     refreshRawJson();
 
-    final jsonString = const JsonEncoder.withIndent(
-      '  ',
-    ).convert(config.value!.toJson());
+    final jsonString = jsonEncode(config.value!.toJson());
     // Convert JSON to Base64
     final base64String = base64.encode(utf8.encode(jsonString));
 
@@ -315,6 +312,168 @@ class ConfigController extends GetxController {
     if (index >= 0 && index < silentHours.length) {
       silentHours.removeAt(index);
       markModified();
+    }
+  }
+
+  Future<void> analyzeAndUpdateSongMasterCounts() async {
+    final folderPath = qtronFolder.value.trim();
+    if (folderPath.isEmpty) {
+      Get.snackbar(
+        "Analyze Failed",
+        "Master folder is not set",
+        backgroundColor: Colors.red.withValues(alpha: 0.9),
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    final dir = Directory(folderPath);
+    if (!await dir.exists()) {
+      Get.snackbar(
+        "Analyze Failed",
+        "Master folder does not exist",
+        backgroundColor: Colors.red.withValues(alpha: 0.9),
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    int updatedCount = 0;
+    final List<SongMasterItem> updatedItems = [];
+    final Set<String> missingFolders = {};
+
+    for (final item in songMaster) {
+      final subFolderName = item.folder;
+      if (subFolderName.isEmpty) {
+        updatedItems.add(item);
+        continue;
+      }
+
+      Directory? matchedSubDir;
+      try {
+        final subDir = Directory(
+          '$folderPath${Platform.pathSeparator}$subFolderName',
+        );
+        if (await subDir.exists()) {
+          matchedSubDir = subDir;
+        } else {
+          await for (final entity in dir.list()) {
+            if (entity is Directory) {
+              final name = entity.path.split(Platform.pathSeparator).last;
+              if (name.toLowerCase() == subFolderName.toLowerCase()) {
+                matchedSubDir = entity;
+                break;
+              }
+            }
+          }
+        }
+      } catch (_) {}
+
+      if (matchedSubDir != null) {
+        int filesCount = 0;
+        try {
+          await for (final entity in matchedSubDir.list()) {
+            if (entity is File) {
+              final extension = entity.path.split('.').last.toLowerCase();
+              if (extension == 'mp3') {
+                filesCount++;
+              }
+            }
+          }
+        } catch (_) {}
+
+        if (item.count != filesCount) {
+          updatedItems.add(item.copyWith(id: filesCount));
+          updatedCount++;
+        } else {
+          updatedItems.add(item);
+        }
+      } else {
+        missingFolders.add(subFolderName);
+        if (item.count != 0) {
+          updatedItems.add(item.copyWith(id: 0));
+          updatedCount++;
+        } else {
+          updatedItems.add(item);
+        }
+      }
+    }
+
+    if (updatedCount > 0) {
+      songMaster.assignAll(updatedItems);
+      markModified();
+    }
+
+    if (missingFolders.isNotEmpty) {
+      Get.dialog(
+        AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange),
+              SizedBox(width: 8),
+              Text("Missing Folders Detected"),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "The following folders configured in Song Master are missing from the master directory on your PC:",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              ...missingFolders.map(
+                (f) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2.0),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.folder_off,
+                        size: 16,
+                        color: Colors.redAccent,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        f,
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Their song counts have been reset to 0.",
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Get.back(), child: const Text("OK")),
+          ],
+        ),
+      );
+    } else if (updatedCount > 0) {
+      Get.snackbar(
+        "Analysis Complete",
+        "Updated file counts for $updatedCount folder(s)",
+        backgroundColor: Colors.green.withValues(alpha: 0.9),
+        colorText: Colors.white,
+      );
+    } else {
+      Get.snackbar(
+        "Analysis Complete",
+        "All folder file counts are already up-to-date",
+        backgroundColor: Colors.blue.withValues(alpha: 0.9),
+        colorText: Colors.white,
+      );
     }
   }
 }

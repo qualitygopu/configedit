@@ -291,11 +291,9 @@ class FileHelperImpl {
         'Z',
       ];
       for (final drive in driveLetters) {
-        final path = '$drive:\\';
+        final qtronPath = '$drive:\_QTRON';
         try {
-          if (await Directory(path).exists()) {
-            final qtronPath = '$drive:\\_QTRON';
-            await Directory(qtronPath).create();
+          if (await Directory(qtronPath).exists()) {
             return qtronPath;
           }
         } catch (_) {}

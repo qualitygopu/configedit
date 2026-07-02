@@ -1,8 +1,40 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'config_controller.dart';
 import '../utils/file_helper.dart';
+
+class FileCopyTask {
+  final String destinationFolder;
+  final List<List<String>> files;
+
+  FileCopyTask({required this.destinationFolder, List<List<String>>? files})
+    : files = files ?? [];
+
+  Map<String, dynamic> toJson() {
+    return {'destinationFolder': destinationFolder, 'Files': files};
+  }
+
+  factory FileCopyTask.fromJson(Map<String, dynamic> json) {
+    final rawFiles = json['Files'];
+    final files = <List<String>>[];
+    if (rawFiles is List<dynamic>) {
+      for (final entry in rawFiles) {
+        if (entry is List<dynamic> && entry.length >= 2) {
+          final fileName = entry[0]?.toString() ?? '';
+          final sourcePath = entry[1]?.toString() ?? '';
+          files.add([fileName, sourcePath]);
+        }
+      }
+    }
+    return FileCopyTask(
+      destinationFolder: json['destinationFolder']?.toString() ?? '',
+      files: files,
+    );
+  }
+}
 
 class FileManagerController extends GetxController {
   static const Set<String> _hiddenFolderNames = {
@@ -20,11 +52,22 @@ class FileManagerController extends GetxController {
   final RxString rootPath = ''.obs;
   final RxList<FileSystemEntity> items = <FileSystemEntity>[].obs;
   final RxBool isLoading = false.obs;
+  final RxBool isTaskExecutionInProgress = false.obs;
+  final RxInt taskTotalItems = 0.obs;
+  final RxInt taskProcessedItems = 0.obs;
+  final RxString taskProgressLabel = ''.obs;
+  final RxString currentCopyingPath = ''.obs;
+  final RxList<String> completedCopyingPaths = <String>[].obs;
   final RxString errorMessage = ''.obs;
   final Rxn<FileSystemEntity> clipboardItem = Rxn<FileSystemEntity>();
   final RxString clipboardOperation = ''.obs; // 'copy' or 'cut'
   final RxList<String> breadcrumbs = <String>[].obs;
   final RxList<String> selectedFilePaths = <String>[].obs;
+  final RxList<FileCopyTask> copyTasks = <FileCopyTask>[].obs;
+  final RxString sortColumn =
+      'None'.obs; // 'None', 'Name', 'SourcePath', 'Size', 'Status'
+  final RxBool sortAscending = true.obs;
+  final RxString backupFolderPath = ''.obs;
   Worker? _qtronFolderWorker;
 
   @override
@@ -53,6 +96,7 @@ class FileManagerController extends GetxController {
       currentPath.value = '';
       items.clear();
       breadcrumbs.clear();
+      copyTasks.clear();
       if (showErrorIfEmpty) {
         errorMessage.value = 'Master qtronFolder is not set';
       }
@@ -60,6 +104,7 @@ class FileManagerController extends GetxController {
     }
 
     rootPath.value = masterPath;
+    await _loadCopyTasks();
     if (currentPath.value.isEmpty ||
         !_isWithinRoot(currentPath.value, masterPath)) {
       await navigateToFolder(masterPath);
@@ -76,11 +121,824 @@ class FileManagerController extends GetxController {
         normalizedPath.startsWith('$normalizedRoot${Platform.pathSeparator}');
   }
 
+  bool isPathPendingCopy(String path) {
+    final normalizedPath = _normalizePath(path);
+    bool isQueueItem = false;
+    for (final task in copyTasks) {
+      final destFolder = _resolveTaskDestinationPath(task.destinationFolder);
+      for (final entry in task.files) {
+        if (entry.isEmpty) continue;
+        final fileName = entry[0];
+        final targetPath = '$destFolder${Platform.pathSeparator}$fileName';
+        if (_normalizePath(targetPath) == normalizedPath) {
+          isQueueItem = true;
+          break;
+        }
+      }
+      if (isQueueItem) break;
+    }
+
+    if (!isQueueItem) return false;
+
+    if (isTaskExecutionInProgress.value) {
+      final isCompleted = completedCopyingPaths.any(
+        (p) => _normalizePath(p) == normalizedPath,
+      );
+      return !isCompleted;
+    }
+
+    final fileExists = File(path).existsSync() || Directory(path).existsSync();
+    return !fileExists;
+  }
+
+  String getItemName(FileSystemEntity item) {
+    return item.path.split(Platform.pathSeparator).last;
+  }
+
+  String getItemSourcePath(FileSystemEntity item) {
+    final normalizedPath = _normalizePath(item.path);
+    for (final task in copyTasks) {
+      final destFolder = _resolveTaskDestinationPath(task.destinationFolder);
+      for (final entry in task.files) {
+        if (entry.length < 2) continue;
+        final fileName = entry[0];
+        final fileTargetPath = '$destFolder${Platform.pathSeparator}$fileName';
+        if (_normalizePath(fileTargetPath) == normalizedPath) {
+          return entry[1];
+        }
+      }
+    }
+    return '';
+  }
+
+  int getItemSize(FileSystemEntity item) {
+    if (item is Directory) return -1;
+    try {
+      if (item.existsSync()) {
+        return (item as File).lengthSync();
+      }
+      final sourcePath = getItemSourcePath(item);
+      if (sourcePath.isNotEmpty) {
+        final sourceFile = File(sourcePath);
+        if (sourceFile.existsSync()) {
+          return sourceFile.lengthSync();
+        }
+      }
+    } catch (_) {}
+    return 0;
+  }
+
+  String getItemStatus(FileSystemEntity item) {
+    final path = item.path;
+    final isPending = isPathPendingCopy(path);
+    if (!isPending) return 'Completed';
+    final isCurrentCopying = currentCopyingPath.value == path;
+    return isCurrentCopying ? 'Copying' : 'Pending';
+  }
+
+  void sortItems(String column, bool ascending) {
+    sortColumn.value = column;
+    sortAscending.value = ascending;
+
+    if (column == 'None') {
+      final dirs = items.whereType<Directory>().toList();
+      dirs.sort(
+        (a, b) => getItemName(
+          a,
+        ).toLowerCase().compareTo(getItemName(b).toLowerCase()),
+      );
+      final files = items.whereType<File>().toList();
+      items.assignAll([...dirs, ...files]);
+      return;
+    }
+
+    items.sort((a, b) {
+      final aIsDir = a is Directory;
+      final bIsDir = b is Directory;
+      if (aIsDir != bIsDir) {
+        return aIsDir ? -1 : 1;
+      }
+
+      int cmp = 0;
+      switch (column) {
+        case 'Name':
+          final aName = getItemName(a);
+          final bName = getItemName(b);
+          cmp = aName.toLowerCase().compareTo(bName.toLowerCase());
+          break;
+        case 'SourcePath':
+          final aSrc = getItemSourcePath(a);
+          final bSrc = getItemSourcePath(b);
+          cmp = aSrc.toLowerCase().compareTo(bSrc.toLowerCase());
+          break;
+        case 'Size':
+          final aSize = getItemSize(a);
+          final bSize = getItemSize(b);
+          cmp = aSize.compareTo(bSize);
+          break;
+        case 'Status':
+          final aStatus = getItemStatus(a);
+          final bStatus = getItemStatus(b);
+          cmp = aStatus.compareTo(bStatus);
+          break;
+      }
+      return ascending ? cmp : -cmp;
+    });
+    items.refresh();
+  }
+
+  Future<void> renamePendingFile(String targetPath, String newName) async {
+    final normalizedTarget = _normalizePath(targetPath);
+    final destFolder = _taskDestinationFolder(currentPath.value);
+    final task = _findCopyTask(destFolder);
+    if (task == null || task.files.isEmpty) return;
+
+    bool updated = false;
+    for (int i = 0; i < task.files.length; i++) {
+      final entry = task.files[i];
+      if (entry.length < 2) continue;
+      final fileName = entry[0];
+      final fileTargetPath =
+          '${currentPath.value}${Platform.pathSeparator}$fileName';
+      if (_normalizePath(fileTargetPath) == normalizedTarget) {
+        final dotIndex = fileName.lastIndexOf('.');
+        final extension = dotIndex != -1 ? fileName.substring(dotIndex) : '';
+
+        String finalNewName = newName.trim();
+        if (extension.isNotEmpty &&
+            !finalNewName.toLowerCase().endsWith(extension.toLowerCase())) {
+          finalNewName += extension;
+        }
+
+        task.files[i] = [finalNewName, entry[1]];
+        updated = true;
+        break;
+      }
+    }
+
+    if (updated) {
+      await _saveCopyTasks();
+      if (currentPath.value.isNotEmpty) {
+        await navigateToFolder(currentPath.value);
+      }
+      Get.snackbar(
+        'Success',
+        'Pending file renamed to $newName',
+        backgroundColor: Colors.green.withValues(alpha: 0.9),
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  void toggleSort(String column) {
+    if (sortColumn.value == column) {
+      sortAscending.value = !sortAscending.value;
+    } else {
+      sortColumn.value = column;
+      sortAscending.value = true;
+    }
+    sortItems(sortColumn.value, sortAscending.value);
+  }
+
   String _normalizePath(String path) {
     final trimmed = path.trim();
     if (trimmed.isEmpty) return '';
     final withoutTrailing = trimmed.replaceAll(RegExp(r'[\\/]+$'), '');
     return Platform.isWindows ? withoutTrailing.toLowerCase() : withoutTrailing;
+  }
+
+  String _relativePathToRoot(String path) {
+    if (rootPath.value.isEmpty) return path;
+    final normalizedRoot = _normalizePath(rootPath.value);
+    final normalizedPath = _normalizePath(path);
+    if (normalizedPath == normalizedRoot) {
+      return '';
+    }
+    final prefix = '$normalizedRoot${Platform.pathSeparator}';
+    if (normalizedPath.startsWith(prefix)) {
+      final relative = path.substring(rootPath.value.length);
+      return relative.replaceFirst(RegExp(r'^[\\/]+'), '');
+    }
+    return path;
+  }
+
+  String _resolveTaskDestinationPath(String destinationFolder) {
+    if (rootPath.value.isEmpty) {
+      return destinationFolder.isEmpty ? currentPath.value : destinationFolder;
+    }
+    if (destinationFolder.isEmpty) {
+      return rootPath.value;
+    }
+    return '${rootPath.value}${Platform.pathSeparator}$destinationFolder';
+  }
+
+  String _taskDestinationFolder(String destinationPath) {
+    return _relativePathToRoot(destinationPath);
+  }
+
+  Future<String?> _copyTasksFilePath() async {
+    if (rootPath.value.isEmpty) return null;
+    return '${rootPath.value}${Platform.pathSeparator}filecopy.json';
+  }
+
+  Future<void> _loadCopyTasks() async {
+    copyTasks.clear();
+    final path = await _copyTasksFilePath();
+    if (path == null) return;
+    try {
+      final file = File(path);
+      if (!await file.exists()) return;
+      final content = await file.readAsString();
+      final decoded = jsonDecode(content);
+      if (decoded is List<dynamic>) {
+        for (final entry in decoded) {
+          if (entry is Map<String, dynamic>) {
+            copyTasks.add(FileCopyTask.fromJson(entry));
+          }
+        }
+      }
+    } catch (_) {
+      copyTasks.clear();
+    }
+  }
+
+  Future<void> _saveCopyTasks() async {
+    final path = await _copyTasksFilePath();
+    if (path == null) return;
+    try {
+      final file = File(path);
+      final encoder = const JsonEncoder.withIndent('  ');
+      await file.writeAsString(
+        encoder.convert(copyTasks.map((task) => task.toJson()).toList()),
+      );
+    } catch (_) {}
+  }
+
+  FileCopyTask? _findCopyTask(String destinationFolder) {
+    for (final task in copyTasks) {
+      if (task.destinationFolder == destinationFolder) {
+        return task;
+      }
+    }
+    return null;
+  }
+
+  String _getUniqueFileName(
+    String destinationFolderPath,
+    String originalName,
+    String sourcePath,
+    FileCopyTask? existingTask, {
+    List<List<String>>? localBuffer,
+    bool allowDuplicateSource = false,
+  }) {
+    bool nameExists(String name) {
+      final destPath = '$destinationFolderPath${Platform.pathSeparator}$name';
+      if (File(destPath).existsSync() || Directory(destPath).existsSync()) {
+        return true;
+      }
+      if (existingTask != null) {
+        if (existingTask.files.any((e) => e[0] == name)) {
+          return true;
+        }
+      }
+      if (localBuffer != null) {
+        if (localBuffer.any((e) => e[0] == name)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Check if the exact same source path is already queued
+    if (!allowDuplicateSource && existingTask != null) {
+      final isAlreadyQueued = existingTask.files.any(
+        (e) => _normalizePath(e[1]) == _normalizePath(sourcePath),
+      );
+      if (isAlreadyQueued) {
+        return ''; // Skip
+      }
+    }
+    if (!allowDuplicateSource && localBuffer != null) {
+      final isAlreadyInBuffer = localBuffer.any(
+        (e) => _normalizePath(e[1]) == _normalizePath(sourcePath),
+      );
+      if (isAlreadyInBuffer) {
+        return ''; // Skip
+      }
+    }
+
+    // Check if destination path is identical to source path (copying onto itself)
+    final directDestPath =
+        '$destinationFolderPath${Platform.pathSeparator}$originalName';
+    if (_normalizePath(directDestPath) == _normalizePath(sourcePath)) {
+      return ''; // Skip
+    }
+
+    if (!nameExists(originalName)) {
+      return originalName;
+    }
+
+    int counter = 1;
+    final dotIndex = originalName.lastIndexOf('.');
+    final base = dotIndex != -1
+        ? originalName.substring(0, dotIndex)
+        : originalName;
+    final ext = dotIndex != -1 ? originalName.substring(dotIndex) : '';
+
+    String newName = originalName;
+    while (nameExists(newName)) {
+      newName = '${base}_$counter$ext';
+      counter++;
+    }
+    return newName;
+  }
+
+  Future<void> _addCopyTask(
+    String destinationPath,
+    String fileName,
+    String sourcePath,
+  ) async {
+    sortColumn.value = 'None';
+    final destinationFolder = _taskDestinationFolder(destinationPath);
+    final existing = _findCopyTask(destinationFolder);
+
+    final uniqueName = _getUniqueFileName(
+      destinationPath,
+      fileName,
+      sourcePath,
+      existing,
+    );
+    if (uniqueName.isEmpty) return; // skipped
+
+    if (existing != null) {
+      existing.files.add([uniqueName, sourcePath]);
+    } else {
+      copyTasks.add(
+        FileCopyTask(
+          destinationFolder: destinationFolder,
+          files: [
+            [uniqueName, sourcePath],
+          ],
+        ),
+      );
+    }
+    copyTasks.refresh();
+    await _saveCopyTasks();
+  }
+
+  Future<void> _addCopyTasksBulk(
+    String destinationPath,
+    List<List<String>> entries,
+  ) async {
+    if (entries.isEmpty) return;
+    sortColumn.value = 'None';
+    final destinationFolder = _taskDestinationFolder(destinationPath);
+    final existing = _findCopyTask(destinationFolder);
+    if (existing != null) {
+      for (final entry in entries) {
+        final originalName = entry[0];
+        final sourcePath = entry[1];
+        final alreadyExists = existing.files.any(
+          (e) => e[1] == sourcePath || e[0] == originalName,
+        );
+        if (!alreadyExists) {
+          existing.files.add(entry);
+        }
+      }
+    } else {
+      copyTasks.add(
+        FileCopyTask(
+          destinationFolder: destinationFolder,
+          files: List<List<String>>.from(entries),
+        ),
+      );
+    }
+    copyTasks.refresh();
+    await _saveCopyTasks();
+  }
+
+  Future<void> _backupCopyTasksToPath(String directory) async {
+    if (directory.isEmpty) return;
+    try {
+      final backupPath =
+          '$directory${Platform.pathSeparator}filecopy_copy.json';
+      final file = File(backupPath);
+      final encoder = const JsonEncoder.withIndent('  ');
+      await file.writeAsString(
+        encoder.convert(copyTasks.map((task) => task.toJson()).toList()),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> executeCopyTasks() async {
+    if (copyTasks.isEmpty) return;
+
+    if (backupFolderPath.value.isEmpty) {
+      final selected = await FileHelper.selectDirectory();
+      if (selected == null) {
+        Get.snackbar(
+          'Backup Cancelled',
+          'Copy tasks execution aborted because backup folder was not selected',
+          backgroundColor: Colors.red.withValues(alpha: 0.9),
+          colorText: Colors.white,
+        );
+        return;
+      }
+      backupFolderPath.value = selected;
+    }
+
+    await _backupCopyTasksToPath(backupFolderPath.value);
+    final taskList = List<FileCopyTask>.from(copyTasks);
+    taskTotalItems.value = taskList.fold<int>(
+      0,
+      (sum, task) => sum + task.files.length,
+    );
+    taskProcessedItems.value = 0;
+    taskProgressLabel.value = 'Starting task queue';
+    currentCopyingPath.value = '';
+    completedCopyingPaths.clear();
+    isTaskExecutionInProgress.value = true;
+    try {
+      for (final task in taskList) {
+        final destinationFolder = _resolveTaskDestinationPath(
+          task.destinationFolder,
+        );
+        final destinationDir = Directory(destinationFolder);
+        if (!await destinationDir.exists()) {
+          await destinationDir.create(recursive: true);
+        }
+
+        for (final entry in task.files) {
+          if (entry.length < 2) continue;
+          final fileName = entry[0];
+          final sourcePath = entry[1];
+          final targetPath =
+              '$destinationFolder${Platform.pathSeparator}$fileName';
+          currentCopyingPath.value = targetPath;
+
+          taskProgressLabel.value = 'Copying $fileName';
+
+          try {
+            final sourceFile = File(sourcePath);
+            if (await sourceFile.exists()) {
+              if (await File(targetPath).exists()) {
+                if (!completedCopyingPaths.contains(targetPath)) {
+                  completedCopyingPaths.add(targetPath);
+                }
+                continue;
+              }
+              await sourceFile.copy(targetPath);
+              if (!completedCopyingPaths.contains(targetPath)) {
+                completedCopyingPaths.add(targetPath);
+              }
+              _appendCopiedItemIfVisible(targetPath);
+              continue;
+            }
+
+            final sourceDir = Directory(sourcePath);
+            if (await sourceDir.exists()) {
+              await _copyDirectory(sourceDir, Directory(targetPath));
+              if (!completedCopyingPaths.contains(targetPath)) {
+                completedCopyingPaths.add(targetPath);
+              }
+              _appendCopiedItemIfVisible(targetPath);
+            }
+          } catch (_) {
+            // ignore individual copy failures and continue with other tasks
+          } finally {
+            taskProcessedItems.value += 1;
+          }
+        }
+      }
+      copyTasks.clear();
+    } finally {
+      currentCopyingPath.value = '';
+      completedCopyingPaths.clear();
+      taskProgressLabel.value = '';
+      taskTotalItems.value = 0;
+      taskProcessedItems.value = 0;
+      isTaskExecutionInProgress.value = false;
+      await _saveCopyTasks();
+    }
+  }
+
+  void _appendCopiedItemIfVisible(String targetPath) {
+    if (currentPath.value.isEmpty) return;
+    final parentPath = Directory(targetPath).parent.path;
+    if (_normalizePath(parentPath) != _normalizePath(currentPath.value)) {
+      return;
+    }
+
+    final normalizedTarget = _normalizePath(targetPath);
+    final alreadyListed = items.any(
+      (entity) => _normalizePath(entity.path) == normalizedTarget,
+    );
+    if (alreadyListed) return;
+
+    final file = File(targetPath);
+    if (file.existsSync()) {
+      items.add(file);
+    } else {
+      final dir = Directory(targetPath);
+      if (dir.existsSync()) {
+        items.add(dir);
+      }
+    }
+
+    items.sort((a, b) {
+      final aIsDir = a is Directory;
+      final bIsDir = b is Directory;
+      if (aIsDir != bIsDir) {
+        return aIsDir ? -1 : 1;
+      }
+      final aName = a.path.split(Platform.pathSeparator).last;
+      final bName = b.path.split(Platform.pathSeparator).last;
+      return aName.compareTo(bName);
+    });
+    items.refresh();
+  }
+
+  Future<void> clearCopyTasks() async {
+    copyTasks.clear();
+    await _saveCopyTasks();
+    if (currentPath.value.isNotEmpty) {
+      await navigateToFolder(currentPath.value);
+    }
+  }
+
+  Future<void> removeFileFromQueue(String targetPath) async {
+    final normalizedTarget = _normalizePath(targetPath);
+    bool removed = false;
+
+    final tasksToRemove = <FileCopyTask>[];
+
+    for (final task in copyTasks) {
+      final destFolder = _resolveTaskDestinationPath(task.destinationFolder);
+      final entriesToRemove = <List<String>>[];
+
+      for (final entry in task.files) {
+        if (entry.length < 2) continue;
+        final fileName = entry[0];
+        final fileTargetPath = '$destFolder${Platform.pathSeparator}$fileName';
+        if (_normalizePath(fileTargetPath) == normalizedTarget) {
+          entriesToRemove.add(entry);
+        }
+      }
+
+      if (entriesToRemove.isNotEmpty) {
+        task.files.removeWhere((entry) => entriesToRemove.contains(entry));
+        removed = true;
+        if (task.files.isEmpty) {
+          tasksToRemove.add(task);
+        }
+      }
+    }
+
+    if (removed) {
+      if (tasksToRemove.isNotEmpty) {
+        copyTasks.removeWhere((task) => tasksToRemove.contains(task));
+      }
+      copyTasks.refresh();
+      await _saveCopyTasks();
+
+      if (currentPath.value.isNotEmpty) {
+        await navigateToFolder(currentPath.value);
+      }
+
+      final fileName = targetPath.split(Platform.pathSeparator).last;
+      Get.snackbar(
+        'Queue Updated',
+        'Removed $fileName from queue',
+        backgroundColor: Colors.blue.withValues(alpha: 0.9),
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  bool get hasPendingTasksForCurrentFolder {
+    if (currentPath.value.isEmpty) return false;
+    final destFolder = _taskDestinationFolder(currentPath.value);
+    final task = _findCopyTask(destFolder);
+    return task != null && task.files.isNotEmpty;
+  }
+
+  Future<void> renamePendingFiles(String destinationPath) async {
+    final destFolder = _taskDestinationFolder(destinationPath);
+    final task = _findCopyTask(destFolder);
+    if (task == null || task.files.isEmpty) return;
+
+    // 1. Get the pending files from the currently sorted items list
+    final sortedPendingFiles = items
+        .whereType<File>()
+        .where((file) => isPathPendingCopy(file.path))
+        .toList();
+
+    if (sortedPendingFiles.isEmpty) return;
+
+    // 2. Map target path to entry in task.files
+    final entryMap = <String, List<String>>{};
+    for (final entry in task.files) {
+      if (entry.length < 2) continue;
+      final fileName = entry[0];
+      final targetPath = '$destinationPath${Platform.pathSeparator}$fileName';
+      entryMap[_normalizePath(targetPath)] = entry;
+    }
+
+    // 3. Rebuild the list of pending entries in the sorted order
+    final sortedPendingEntries = <List<String>>[];
+    for (final file in sortedPendingFiles) {
+      final normPath = _normalizePath(file.path);
+      final entry = entryMap[normPath];
+      if (entry != null) {
+        sortedPendingEntries.add(entry);
+      }
+    }
+
+    // If for some reason we missed any entries (e.g. they weren't in sortedPendingFiles),
+    // let's collect the remaining entries to not lose them
+    final remainingEntries = <List<String>>[];
+    for (final entry in task.files) {
+      if (!sortedPendingEntries.contains(entry)) {
+        remainingEntries.add(entry);
+      }
+    }
+
+    // 4. Rename the sorted pending entries sequentially
+    final fileCount = sortedPendingEntries.length;
+    final padLength = fileCount < 1000 ? 3 : 4;
+
+    final renamedPendingEntries = <List<String>>[];
+    for (int i = 0; i < fileCount; i++) {
+      final entry = sortedPendingEntries[i];
+      final originalName = entry[0];
+      final sourcePath = entry[1];
+
+      final dotIndex = originalName.lastIndexOf('.');
+      final extension = dotIndex != -1 ? originalName.substring(dotIndex) : '';
+
+      final indexStr = (i + 1).toString().padLeft(padLength, '0');
+      final newFileName = '$indexStr$extension';
+
+      renamedPendingEntries.add([newFileName, sourcePath]);
+    }
+
+    // 5. Replace task.files: put renamed pending entries first, then any remaining ones
+    task.files.clear();
+    task.files.addAll(renamedPendingEntries);
+    task.files.addAll(remainingEntries);
+
+    copyTasks.refresh();
+    await _saveCopyTasks();
+
+    if (currentPath.value.isNotEmpty) {
+      await navigateToFolder(currentPath.value);
+    }
+
+    Get.snackbar(
+      'Queue Updated',
+      'Renamed $fileCount pending files in current sorted order',
+      backgroundColor: Colors.green.withValues(alpha: 0.9),
+      colorText: Colors.white,
+    );
+  }
+
+  Future<void> randomizeAndRenamePendingFiles(String destinationPath) async {
+    final destFolder = _taskDestinationFolder(destinationPath);
+    final task = _findCopyTask(destFolder);
+    if (task == null || task.files.isEmpty) return;
+
+    // 1. Get the pending files from the current folder (to match task entries)
+    final pendingFiles = items
+        .whereType<File>()
+        .where((file) => isPathPendingCopy(file.path))
+        .toList();
+
+    if (pendingFiles.isEmpty) return;
+
+    // 2. Map target path to entry in task.files
+    final entryMap = <String, List<String>>{};
+    for (final entry in task.files) {
+      if (entry.length < 2) continue;
+      final fileName = entry[0];
+      final targetPath = '$destinationPath${Platform.pathSeparator}$fileName';
+      entryMap[_normalizePath(targetPath)] = entry;
+    }
+
+    // 3. Collect the entries of the pending files
+    final pendingEntries = <List<String>>[];
+    for (final file in pendingFiles) {
+      final normPath = _normalizePath(file.path);
+      final entry = entryMap[normPath];
+      if (entry != null) {
+        pendingEntries.add(entry);
+      }
+    }
+
+    // 4. Shuffle the pending entries randomly
+    pendingEntries.shuffle();
+
+    // Collect any remaining entries in task.files that were not pending
+    final remainingEntries = <List<String>>[];
+    for (final entry in task.files) {
+      if (!pendingEntries.contains(entry)) {
+        remainingEntries.add(entry);
+      }
+    }
+
+    // 5. Replace task.files: put randomized pending entries first, then remaining ones
+    task.files.clear();
+    task.files.addAll(pendingEntries);
+    task.files.addAll(remainingEntries);
+
+    copyTasks.refresh();
+    await _saveCopyTasks();
+
+    if (currentPath.value.isNotEmpty) {
+      await navigateToFolder(currentPath.value);
+    }
+
+    Get.snackbar(
+      'Queue Updated',
+      'Randomized pending files in queue',
+      backgroundColor: Colors.green.withValues(alpha: 0.9),
+      colorText: Colors.white,
+    );
+  }
+
+  Future<void> multiplySelectedFiles(int copies) async {
+    if (currentPath.value.isEmpty || selectedFilePaths.isEmpty || copies <= 0) {
+      return;
+    }
+
+    final destFolder = _taskDestinationFolder(currentPath.value);
+    var task = _findCopyTask(destFolder);
+
+    if (task == null) {
+      task = FileCopyTask(destinationFolder: destFolder);
+      copyTasks.add(task);
+    }
+
+    int addedCount = 0;
+    sortColumn.value = 'None';
+
+    for (int i = 0; i < copies; i++) {
+      for (final path in selectedFilePaths) {
+        String sourcePath = '';
+        String originalName = path.split(Platform.pathSeparator).last;
+
+        if (isPathPendingCopy(path)) {
+          final entry = task.files.firstWhereOrNull(
+            (e) =>
+                e.length >= 2 &&
+                _normalizePath(
+                      '${currentPath.value}${Platform.pathSeparator}${e[0]}',
+                    ) ==
+                    _normalizePath(path),
+          );
+          if (entry != null) {
+            sourcePath = entry[1];
+          }
+        } else {
+          sourcePath = path;
+        }
+
+        if (sourcePath.isEmpty) continue;
+
+        final dotIndex = originalName.lastIndexOf('.');
+        final base = dotIndex != -1
+            ? originalName.substring(0, dotIndex)
+            : originalName;
+        final ext = dotIndex != -1 ? originalName.substring(dotIndex) : '';
+
+        final targetName = '${base}_${i + 1}$ext';
+        final uniqueName = _getUniqueFileName(
+          currentPath.value,
+          targetName,
+          sourcePath,
+          task,
+          allowDuplicateSource: true,
+        );
+        if (uniqueName.isNotEmpty) {
+          task.files.add([uniqueName, sourcePath]);
+          addedCount++;
+        }
+      }
+    }
+
+    if (addedCount > 0) {
+      copyTasks.refresh();
+      await _saveCopyTasks();
+
+      selectedFilePaths.clear();
+      await navigateToFolder(currentPath.value);
+
+      Get.snackbar(
+        'Queue Updated',
+        'Multiplied selected file(s) by $copies copies',
+        backgroundColor: Colors.green.withValues(alpha: 0.9),
+        colorText: Colors.white,
+      );
+    }
   }
 
   String _baseName(String path) {
@@ -174,19 +1032,36 @@ class FileManagerController extends GetxController {
         errorMessage.value = 'Error reading folder: $e';
       }
 
-      // Sort: folders first, then files
-      loadedItems.sort((a, b) {
-        bool aIsDir = a is Directory;
-        bool bIsDir = b is Directory;
-        if (aIsDir != bIsDir) {
-          return aIsDir ? -1 : 1;
+      // Inject pending copy task placeholders
+      final normalizedCurrent = _normalizePath(path);
+      for (final task in copyTasks) {
+        final destFolder = _resolveTaskDestinationPath(task.destinationFolder);
+        if (_normalizePath(destFolder) == normalizedCurrent) {
+          for (final entry in task.files) {
+            if (entry.length < 2) continue;
+            final fileName = entry[0];
+            final sourcePath = entry[1];
+            final targetPath = '$destFolder${Platform.pathSeparator}$fileName';
+
+            final normalizedTarget = _normalizePath(targetPath);
+            final alreadyLoaded = loadedItems.any(
+              (entity) => _normalizePath(entity.path) == normalizedTarget,
+            );
+
+            if (!alreadyLoaded) {
+              final isDir = Directory(sourcePath).existsSync();
+              if (isDir) {
+                loadedItems.add(Directory(targetPath));
+              } else {
+                loadedItems.add(File(targetPath));
+              }
+            }
+          }
         }
-        String aName = a.path.split(Platform.pathSeparator).last;
-        String bName = b.path.split(Platform.pathSeparator).last;
-        return aName.compareTo(bName);
-      });
+      }
 
       items.assignAll(loadedItems);
+      sortItems(sortColumn.value, sortAscending.value);
       _updateBreadcrumbs(path);
     } catch (e) {
       errorMessage.value = 'Error: $e';
@@ -336,6 +1211,7 @@ class FileManagerController extends GetxController {
         errorMessage.value = 'No destination folder selected';
         return;
       }
+      sortColumn.value = 'None';
 
       if (clipboardItem.value == null || clipboardOperation.value.isEmpty) {
         final externalPaths = await FileHelper.getClipboardFilePaths();
@@ -345,20 +1221,18 @@ class FileManagerController extends GetxController {
         }
 
         isLoading.value = true;
-        int pastedCount = 0;
-        for (final sourcePath in externalPaths) {
-          final didPaste = await _pasteFromExternalPath(sourcePath);
-          if (didPaste) {
-            pastedCount++;
-          }
-        }
+        taskProgressLabel.value = 'Preparing clipboard items...';
+        final pastedCount = await _pasteFromExternalPathsToDestination(
+          externalPaths,
+          currentPath.value,
+        );
 
         await navigateToFolder(currentPath.value);
         Get.snackbar(
-          'Pasted',
+          'Queued',
           pastedCount > 0
-              ? 'Pasted $pastedCount item(s) from OS clipboard'
-              : 'No valid clipboard files/folders to paste',
+              ? 'Queued $pastedCount item(s) for copy from OS clipboard'
+              : 'No valid clipboard files/folders to queue',
           backgroundColor: (pastedCount > 0 ? Colors.green : Colors.orange)
               .withValues(alpha: 0.9),
           colorText: Colors.white,
@@ -374,13 +1248,12 @@ class FileManagerController extends GetxController {
       isLoading.value = true;
 
       if (source is File) {
-        final destFile = File(destPath);
         if (clipboardOperation.value == 'copy') {
-          await source.copy(destPath);
+          await _addCopyTask(currentPath.value, sourceName, source.path);
           Get.snackbar(
-            'Success',
-            'File copied: $sourceName',
-            backgroundColor: Colors.green.withValues(alpha: 0.9),
+            'Queued',
+            'File copy queued: $sourceName',
+            backgroundColor: Colors.blue.withValues(alpha: 0.9),
             colorText: Colors.white,
           );
         } else if (clipboardOperation.value == 'cut') {
@@ -395,16 +1268,16 @@ class FileManagerController extends GetxController {
           );
         }
       } else if (source is Directory) {
-        await _copyDirectory(source, Directory(destPath));
         if (clipboardOperation.value == 'copy') {
+          await _addCopyTask(currentPath.value, sourceName, source.path);
           Get.snackbar(
-            'Success',
-            'Folder copied: $sourceName',
-            backgroundColor: Colors.green.withValues(alpha: 0.9),
+            'Queued',
+            'Folder copy queued: $sourceName',
+            backgroundColor: Colors.blue.withValues(alpha: 0.9),
             colorText: Colors.white,
           );
         } else if (clipboardOperation.value == 'cut') {
-          await source.delete(recursive: true);
+          await source.rename(destPath);
           clipboardItem.value = null;
           clipboardOperation.value = '';
           Get.snackbar(
@@ -430,49 +1303,6 @@ class FileManagerController extends GetxController {
     }
   }
 
-  Future<bool> _pasteFromExternalPath(String sourcePath) async {
-    try {
-      final file = File(sourcePath);
-      if (await file.exists()) {
-        final sourceName = sourcePath.split(Platform.pathSeparator).last;
-        final destPath =
-            '${currentPath.value}${Platform.pathSeparator}$sourceName';
-        if (_normalizePath(destPath) == _normalizePath(sourcePath)) {
-          return false;
-        }
-        try {
-          await file.copy(destPath);
-        } catch (_) {
-          if (Platform.isMacOS) {
-            final destFolder = currentPath.value;
-            final result = await Process.run('osascript', [
-              '-e',
-              'tell application "Finder" to duplicate file (POSIX file "$sourcePath" as alias) to folder (POSIX file "$destFolder" as alias) with replacing',
-            ]);
-            if (result.exitCode != 0) rethrow;
-          } else {
-            rethrow;
-          }
-        }
-        return true;
-      }
-
-      final dir = Directory(sourcePath);
-      if (await dir.exists()) {
-        final sourceName = sourcePath.split(Platform.pathSeparator).last;
-        final destPath =
-            '${currentPath.value}${Platform.pathSeparator}$sourceName';
-        if (_normalizePath(destPath) == _normalizePath(sourcePath)) {
-          return false;
-        }
-        await _copyDirectory(dir, Directory(destPath));
-        return true;
-      }
-    } catch (_) {}
-
-    return false;
-  }
-
   Future<bool> _pasteFromExternalPathToDestination(
     String sourcePath,
     String destinationFolderPath,
@@ -492,19 +1322,7 @@ class FileManagerController extends GetxController {
             await File(destPath).exists()) {
           return false;
         }
-        try {
-          await file.copy(destPath);
-        } catch (_) {
-          if (Platform.isMacOS) {
-            final result = await Process.run('osascript', [
-              '-e',
-              'tell application "Finder" to duplicate file (POSIX file "$sourcePath" as alias) to folder (POSIX file "$destinationFolderPath" as alias) with replacing',
-            ]);
-            if (result.exitCode != 0) rethrow;
-          } else {
-            rethrow;
-          }
-        }
+        await _addCopyTask(destinationFolderPath, sourceName, sourcePath);
         return true;
       }
 
@@ -517,12 +1335,73 @@ class FileManagerController extends GetxController {
             await Directory(destPath).exists()) {
           return false;
         }
-        await _copyDirectory(dir, Directory(destPath));
+        await _addCopyTask(destinationFolderPath, sourceName, sourcePath);
         return true;
       }
     } catch (_) {}
 
     return false;
+  }
+
+  Future<int> _pasteFromExternalPathsToDestination(
+    List<String> sourcePaths,
+    String destinationFolderPath,
+  ) async {
+    if (rootPath.value.isNotEmpty &&
+        !_isWithinRoot(destinationFolderPath, rootPath.value)) {
+      return 0;
+    }
+
+    final destinationFolder = _taskDestinationFolder(destinationFolderPath);
+    final existing = _findCopyTask(destinationFolder);
+
+    final entriesToAdd = <List<String>>[];
+    int processed = 0;
+
+    for (final sourcePath in sourcePaths) {
+      processed++;
+      taskProgressLabel.value =
+          'Adding item $processed of ${sourcePaths.length} to queue...';
+
+      try {
+        final file = File(sourcePath);
+        if (await file.exists()) {
+          final sourceName = sourcePath.split(Platform.pathSeparator).last;
+          final uniqueName = _getUniqueFileName(
+            destinationFolderPath,
+            sourceName,
+            sourcePath,
+            existing,
+            localBuffer: entriesToAdd,
+          );
+          if (uniqueName.isNotEmpty) {
+            entriesToAdd.add([uniqueName, sourcePath]);
+          }
+          continue;
+        }
+
+        final dir = Directory(sourcePath);
+        if (await dir.exists()) {
+          final sourceName = sourcePath.split(Platform.pathSeparator).last;
+          final uniqueName = _getUniqueFileName(
+            destinationFolderPath,
+            sourceName,
+            sourcePath,
+            existing,
+            localBuffer: entriesToAdd,
+          );
+          if (uniqueName.isNotEmpty) {
+            entriesToAdd.add([uniqueName, sourcePath]);
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (entriesToAdd.isNotEmpty) {
+      await _addCopyTasksBulk(destinationFolderPath, entriesToAdd);
+    }
+
+    return entriesToAdd.length;
   }
 
   Future<void> importDroppedPaths(
@@ -536,17 +1415,12 @@ class FileManagerController extends GetxController {
     }
 
     isLoading.value = true;
+    taskProgressLabel.value = 'Preparing dropped items...';
     try {
-      int importedCount = 0;
-      for (final sourcePath in sourcePaths) {
-        final ok = await _pasteFromExternalPathToDestination(
-          sourcePath,
-          destination,
-        );
-        if (ok) {
-          importedCount++;
-        }
-      }
+      final importedCount = await _pasteFromExternalPathsToDestination(
+        sourcePaths,
+        destination,
+      );
 
       await navigateToFolder(currentPath.value);
       Get.snackbar(
@@ -560,6 +1434,25 @@ class FileManagerController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> pickAndAddFiles() async {
+    try {
+      final result = await FilePicker.pickFiles(allowMultiple: true);
+      if (result != null) {
+        final paths = result.paths.whereType<String>().toList();
+        if (paths.isNotEmpty) {
+          await importDroppedPaths(paths);
+        }
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error picking files',
+        e.toString(),
+        backgroundColor: Colors.red.withValues(alpha: 0.9),
+        colorText: Colors.white,
+      );
     }
   }
 
@@ -678,7 +1571,7 @@ class FileManagerController extends GetxController {
           await _copyDirectory(entity, Directory(targetPath));
         } else if (entity is File) {
           try {
-            await (entity as File).copy(targetPath);
+            await entity.copy(targetPath);
           } catch (_) {
             if (Platform.isMacOS) {
               await Process.run('osascript', [
@@ -814,19 +1707,51 @@ class FileManagerController extends GetxController {
 
     isLoading.value = true;
     int deletedCount = 0;
+    int removedQueueCount = 0;
     try {
       for (final path in List<String>.from(selectedFilePaths)) {
-        try {
-          final file = File(path);
-          if (await file.exists()) {
-            await file.delete();
-            deletedCount++;
+        if (isPathPendingCopy(path)) {
+          final normalizedTarget = _normalizePath(path);
+          final tasksToRemove = <FileCopyTask>[];
+          for (final task in copyTasks) {
+            final entryIndex = task.files.indexWhere(
+              (entry) =>
+                  entry.length >= 2 &&
+                  _normalizePath(
+                        '${currentPath.value}${Platform.pathSeparator}${entry[0]}',
+                      ) ==
+                      normalizedTarget,
+            );
+            if (entryIndex != -1) {
+              task.files.removeAt(entryIndex);
+              removedQueueCount++;
+              if (task.files.isEmpty) {
+                tasksToRemove.add(task);
+              }
+            }
           }
-        } catch (_) {}
+          if (tasksToRemove.isNotEmpty) {
+            copyTasks.removeWhere((t) => tasksToRemove.contains(t));
+          }
+        } else {
+          try {
+            final file = File(path);
+            if (await file.exists()) {
+              await file.delete();
+              deletedCount++;
+            }
+          } catch (_) {}
+        }
       }
+
+      if (removedQueueCount > 0) {
+        copyTasks.refresh();
+        await _saveCopyTasks();
+      }
+
       selectedFilePaths.clear();
       await navigateToFolder(currentPath.value);
-      return deletedCount;
+      return deletedCount + removedQueueCount;
     } finally {
       isLoading.value = false;
     }
