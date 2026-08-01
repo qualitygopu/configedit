@@ -4,6 +4,7 @@ import '../controllers/config_controller.dart';
 import 'alarms_screen.dart';
 import '../widgets/silent_hours_section.dart';
 import '../widgets/song_master_section.dart';
+import '../widgets/device_info_section.dart';
 import 'raw_json_screen.dart';
 import 'playlist_creator_screen.dart';
 import 'file_manager_screen.dart';
@@ -61,6 +62,13 @@ class _MainShellState extends State<MainShell> {
                         return const PlaylistCreatorScreen();
                       case 5:
                         return const FileManagerScreen();
+                      case 6:
+                        return const Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: SingleChildScrollView(
+                            child: DeviceInfoSection(),
+                          ),
+                        );
                       default:
                         return const SizedBox.shrink();
                     }
@@ -159,6 +167,7 @@ class _MainShellState extends State<MainShell> {
                     ),
                     _buildSidebarItem(3, Icons.code_outlined, "Raw JSON Editor"),
                     _buildSidebarItem(5, Icons.folder_outlined, "File Manager"),
+                    _buildSidebarItem(6, Icons.info_outline, "Device Info"),
                   ],
                 ),
               ),

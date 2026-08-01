@@ -14,6 +14,8 @@ class ConfigController extends GetxController {
   final RxList<dynamic> silentHours = <dynamic>[].obs;
   final RxList<SongMasterItem> songMaster = <SongMasterItem>[].obs;
   final RxList<Playlist> playlists = <Playlist>[].obs;
+  final RxString deviceName = "".obs;
+  final RxString deviceSerialNo = "".obs;
   final RxString rawJson = "".obs;
   final RxString errorMessage = "".obs;
   final RxBool isModified = false.obs;
@@ -72,6 +74,8 @@ class ConfigController extends GetxController {
       silentHours.assignAll(parsedConfig.silentHours);
       songMaster.assignAll(parsedConfig.songMaster);
       playlists.assignAll(parsedConfig.playlists);
+      deviceName.value = parsedConfig.deviceInfo.name;
+      deviceSerialNo.value = parsedConfig.deviceInfo.serialNo;
 
       // Pretty print JSON in editor
       rawJson.value = const JsonEncoder.withIndent('  ').convert(decoded);
@@ -190,6 +194,8 @@ class ConfigController extends GetxController {
       silentHours.assignAll(parsedConfig.silentHours);
       songMaster.assignAll(parsedConfig.songMaster);
       playlists.assignAll(parsedConfig.playlists);
+      deviceName.value = parsedConfig.deviceInfo.name;
+      deviceSerialNo.value = parsedConfig.deviceInfo.serialNo;
 
       rawJson.value = text;
       errorMessage.value = "";
@@ -209,6 +215,10 @@ class ConfigController extends GetxController {
       silentHours: silentHours.toList(),
       songMaster: songMaster.toList(),
       playlists: playlists.toList(),
+      deviceInfo: DeviceInfo(
+        name: deviceName.value,
+        serialNo: deviceSerialNo.value,
+      ),
     );
     config.value = updatedConfig;
     rawJson.value = const JsonEncoder.withIndent(
@@ -219,6 +229,13 @@ class ConfigController extends GetxController {
   void markModified() {
     isModified.value = true;
     refreshRawJson();
+  }
+
+  // Device Info management
+  void updateDeviceInfo({String? name, String? serialNo}) {
+    if (name != null) deviceName.value = name;
+    if (serialNo != null) deviceSerialNo.value = serialNo;
+    markModified();
   }
 
   // Alarm management

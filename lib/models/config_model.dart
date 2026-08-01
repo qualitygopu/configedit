@@ -204,18 +204,45 @@ class Playlist {
   }
 }
 
+class DeviceInfo {
+  String name;
+  String serialNo;
+
+  DeviceInfo({required this.name, required this.serialNo});
+
+  factory DeviceInfo.fromJson(Map<String, dynamic> json) {
+    return DeviceInfo(
+      name: json['name'] ?? '',
+      serialNo: json['serialNo'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'name': name, 'serialNo': serialNo};
+  }
+
+  DeviceInfo copyWith({String? name, String? serialNo}) {
+    return DeviceInfo(
+      name: name ?? this.name,
+      serialNo: serialNo ?? this.serialNo,
+    );
+  }
+}
+
 class Config {
   List<AlarmConfig> alarmConfig;
   List<dynamic> silentHours; // Can contain range lists like [start, end]
   List<SongMasterItem> songMaster;
   List<Playlist> playlists;
+  DeviceInfo deviceInfo;
 
   Config({
     required this.alarmConfig,
     required this.silentHours,
     required this.songMaster,
     required this.playlists,
-  });
+    DeviceInfo? deviceInfo,
+  }) : deviceInfo = deviceInfo ?? DeviceInfo(name: '', serialNo: '');
 
   factory Config.fromJson(Map<String, dynamic> json) {
     return Config(
@@ -229,6 +256,9 @@ class Config {
       playlists: (json['Playlists'] as List? ?? [])
           .map((e) => Playlist.fromJson(e))
           .toList(),
+      deviceInfo: json['DeviceInfo'] is Map<String, dynamic>
+          ? DeviceInfo.fromJson(json['DeviceInfo'])
+          : null,
     );
   }
 
@@ -238,6 +268,7 @@ class Config {
       'silentHours': silentHours,
       'SongMaster': songMaster.map((e) => e.toList()).toList(),
       'Playlists': playlists.map((e) => e.toJson()).toList(),
+      'DeviceInfo': deviceInfo.toJson(),
     };
   }
 
@@ -246,12 +277,14 @@ class Config {
     List<dynamic>? silentHours,
     List<SongMasterItem>? songMaster,
     List<Playlist>? playlists,
+    DeviceInfo? deviceInfo,
   }) {
     return Config(
       alarmConfig: alarmConfig ?? this.alarmConfig,
       silentHours: silentHours ?? this.silentHours,
       songMaster: songMaster ?? this.songMaster,
       playlists: playlists ?? this.playlists,
+      deviceInfo: deviceInfo ?? this.deviceInfo,
     );
   }
 }
