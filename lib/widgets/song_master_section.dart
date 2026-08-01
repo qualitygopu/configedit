@@ -656,8 +656,12 @@ class _SongMasterAddEditDialogState extends State<_SongMasterAddEditDialog> {
       );
 
       if (selectedFile != null) {
+        final dotIndex = selectedFile.lastIndexOf('.');
+        final nameWithoutExt = dotIndex > 0
+            ? selectedFile.substring(0, dotIndex)
+            : selectedFile;
         setState(() {
-          fileNameCtrl.text = selectedFile;
+          fileNameCtrl.text = nameWithoutExt;
         });
       }
     } catch (e) {
