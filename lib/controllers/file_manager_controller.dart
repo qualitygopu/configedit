@@ -36,6 +36,15 @@ class FileCopyTask {
   }
 }
 
+// A single flattened copy operation (one file/folder) queued for execution
+// by the concurrent worker pool in FileManagerController.executeCopyTasks().
+class _CopyJob {
+  final String sourcePath;
+  final String targetPath;
+
+  _CopyJob({required this.sourcePath, required this.targetPath});
+}
+
 class FileManagerController extends GetxController {
   static const Set<String> _hiddenFolderNames = {
     '@CONF',
@@ -53,10 +62,12 @@ class FileManagerController extends GetxController {
   final RxList<FileSystemEntity> items = <FileSystemEntity>[].obs;
   final RxBool isLoading = false.obs;
   final RxBool isTaskExecutionInProgress = false.obs;
+  final RxBool stopRequested = false.obs;
   final RxInt taskTotalItems = 0.obs;
   final RxInt taskProcessedItems = 0.obs;
   final RxString taskProgressLabel = ''.obs;
   final RxString currentCopyingPath = ''.obs;
+  final RxSet<String> activeCopyingPaths = <String>{}.obs;
   final RxList<String> completedCopyingPaths = <String>[].obs;
   final RxString errorMessage = ''.obs;
   final Rxn<FileSystemEntity> clipboardItem = Rxn<FileSystemEntity>();
@@ -192,7 +203,7 @@ class FileManagerController extends GetxController {
     final path = item.path;
     final isPending = isPathPendingCopy(path);
     if (!isPending) return 'Completed';
-    final isCurrentCopying = currentCopyingPath.value == path;
+    final isCurrentCopying = activeCopyingPaths.contains(path);
     return isCurrentCopying ? 'Copying' : 'Pending';
   }
 
@@ -537,8 +548,26 @@ class FileManagerController extends GetxController {
     } catch (_) {}
   }
 
-  Future<void> executeCopyTasks() async {
-    if (copyTasks.isEmpty) return;
+  // Signals executeCopyTasks() to stop launching new copies. Files already
+  // in flight are allowed to finish. Has no effect when no execution is in
+  // progress.
+  void requestStopCopyTasks() {
+    if (isTaskExecutionInProgress.value) {
+      stopRequested.value = true;
+      taskProgressLabel.value = 'Stopping...';
+    }
+  }
+
+  // How many files are copied at the same time. Copying a large queue of
+  // small files one-at-a-time is dominated by per-file overhead (open/close,
+  // exists() checks) rather than raw throughput, so running a handful in
+  // parallel noticeably cuts down total time for big batches.
+  static const int _copyConcurrency = 4;
+
+  // Returns true if the queue finished normally, false if it was stopped
+  // early (backup cancelled or user requested stop).
+  Future<bool> executeCopyTasks() async {
+    if (copyTasks.isEmpty) return false;
 
     final selected = await FileHelper.selectDirectory();
     if (selected == null) {
@@ -548,82 +577,122 @@ class FileManagerController extends GetxController {
         backgroundColor: Colors.red.withValues(alpha: 0.9),
         colorText: Colors.white,
       );
-      return;
+      return false;
     }
     backupFolderPath.value = selected;
 
     await _backupCopyTasksToPath(selected);
     final taskList = List<FileCopyTask>.from(copyTasks);
-    taskTotalItems.value = taskList.fold<int>(
-      0,
-      (sum, task) => sum + task.files.length,
-    );
+
+    // Flatten every task's files into a single job list and ensure all
+    // destination folders exist upfront, so workers below can run purely
+    // in parallel without racing on directory creation.
+    final jobs = <_CopyJob>[];
+    for (final task in taskList) {
+      final destinationFolder = _resolveTaskDestinationPath(
+        task.destinationFolder,
+      );
+      final destinationDir = Directory(destinationFolder);
+      if (!await destinationDir.exists()) {
+        await destinationDir.create(recursive: true);
+      }
+      for (final entry in task.files) {
+        if (entry.length < 2) continue;
+        final fileName = entry[0];
+        final sourcePath = entry[1];
+        final targetPath =
+            '$destinationFolder${Platform.pathSeparator}$fileName';
+        jobs.add(_CopyJob(sourcePath: sourcePath, targetPath: targetPath));
+      }
+    }
+
+    taskTotalItems.value = jobs.length;
     taskProcessedItems.value = 0;
     taskProgressLabel.value = 'Starting task queue';
     currentCopyingPath.value = '';
+    activeCopyingPaths.clear();
     completedCopyingPaths.clear();
+    stopRequested.value = false;
     isTaskExecutionInProgress.value = true;
+    bool stopped = false;
     try {
-      for (final task in taskList) {
-        final destinationFolder = _resolveTaskDestinationPath(
-          task.destinationFolder,
-        );
-        final destinationDir = Directory(destinationFolder);
-        if (!await destinationDir.exists()) {
-          await destinationDir.create(recursive: true);
-        }
+      int nextIndex = 0;
 
-        for (final entry in task.files) {
-          if (entry.length < 2) continue;
-          final fileName = entry[0];
-          final sourcePath = entry[1];
-          final targetPath =
-              '$destinationFolder${Platform.pathSeparator}$fileName';
-          currentCopyingPath.value = targetPath;
-
-          taskProgressLabel.value = 'Copying $fileName';
-
-          try {
-            final sourceFile = File(sourcePath);
-            if (await sourceFile.exists()) {
-              if (await File(targetPath).exists()) {
-                if (!completedCopyingPaths.contains(targetPath)) {
-                  completedCopyingPaths.add(targetPath);
-                }
-                continue;
-              }
-              await sourceFile.copy(targetPath);
-              if (!completedCopyingPaths.contains(targetPath)) {
-                completedCopyingPaths.add(targetPath);
-              }
-              _appendCopiedItemIfVisible(targetPath);
-              continue;
-            }
-
-            final sourceDir = Directory(sourcePath);
-            if (await sourceDir.exists()) {
-              await _copyDirectory(sourceDir, Directory(targetPath));
-              if (!completedCopyingPaths.contains(targetPath)) {
-                completedCopyingPaths.add(targetPath);
-              }
-              _appendCopiedItemIfVisible(targetPath);
-            }
-          } catch (_) {
-            // ignore individual copy failures and continue with other tasks
-          } finally {
-            taskProcessedItems.value += 1;
+      Future<void> worker() async {
+        while (true) {
+          if (stopRequested.value) {
+            stopped = true;
+            return;
           }
+          if (nextIndex >= jobs.length) return;
+          final job = jobs[nextIndex];
+          nextIndex++;
+          await _runCopyJob(job);
         }
       }
-      copyTasks.clear();
+
+      final workerCount = jobs.length < _copyConcurrency
+          ? jobs.length
+          : _copyConcurrency;
+      await Future.wait(List.generate(workerCount, (_) => worker()));
+
+      if (!stopped) {
+        copyTasks.clear();
+      }
     } finally {
       currentCopyingPath.value = '';
+      activeCopyingPaths.clear();
       completedCopyingPaths.clear();
       taskProgressLabel.value = '';
       taskTotalItems.value = 0;
       taskProcessedItems.value = 0;
       isTaskExecutionInProgress.value = false;
+      stopRequested.value = false;
       await _saveCopyTasks();
+    }
+    return !stopped;
+  }
+
+  Future<void> _runCopyJob(_CopyJob job) async {
+    final targetPath = job.targetPath;
+    final sourcePath = job.sourcePath;
+    final fileName = targetPath.split(Platform.pathSeparator).last;
+
+    activeCopyingPaths.add(targetPath);
+    currentCopyingPath.value = targetPath;
+    taskProgressLabel.value =
+        'Copying $fileName (${taskProcessedItems.value + 1}/${taskTotalItems.value})';
+
+    try {
+      final sourceFile = File(sourcePath);
+      if (await sourceFile.exists()) {
+        if (await File(targetPath).exists()) {
+          if (!completedCopyingPaths.contains(targetPath)) {
+            completedCopyingPaths.add(targetPath);
+          }
+          return;
+        }
+        await sourceFile.copy(targetPath);
+        if (!completedCopyingPaths.contains(targetPath)) {
+          completedCopyingPaths.add(targetPath);
+        }
+        _appendCopiedItemIfVisible(targetPath);
+        return;
+      }
+
+      final sourceDir = Directory(sourcePath);
+      if (await sourceDir.exists()) {
+        await _copyDirectory(sourceDir, Directory(targetPath));
+        if (!completedCopyingPaths.contains(targetPath)) {
+          completedCopyingPaths.add(targetPath);
+        }
+        _appendCopiedItemIfVisible(targetPath);
+      }
+    } catch (_) {
+      // ignore individual copy failures and continue with other tasks
+    } finally {
+      activeCopyingPaths.remove(targetPath);
+      taskProcessedItems.value += 1;
     }
   }
 

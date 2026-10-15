@@ -384,6 +384,24 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                 ),
               ),
 
+            if (controller.isTaskExecutionInProgress.value)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: OutlinedButton.icon(
+                  onPressed: controller.stopRequested.value
+                      ? null
+                      : () => controller.requestStopCopyTasks(),
+                  icon: const Icon(Icons.stop_circle_outlined, size: 16),
+                  label: Text(
+                    controller.stopRequested.value ? 'Stopping...' : 'Stop',
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                ),
+              ),
+
             if (controller.currentPath.value.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(right: 8),
@@ -393,18 +411,21 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                           controller.isTaskExecutionInProgress.value
                       ? null
                       : () async {
-                          await controller.executeCopyTasks();
+                          final completed = await controller
+                              .executeCopyTasks();
                           if (controller.currentPath.value.isNotEmpty) {
                             await controller.navigateToFolder(
                               controller.currentPath.value,
                             );
                           }
                           Get.snackbar(
-                            'Tasks Executed',
-                            'Task queue execution finished',
-                            backgroundColor: Colors.green.withValues(
-                              alpha: 0.9,
-                            ),
+                            completed ? 'Tasks Executed' : 'Tasks Stopped',
+                            completed
+                                ? 'Task queue execution finished'
+                                : 'Task queue execution stopped; remaining items stay queued',
+                            backgroundColor:
+                                (completed ? Colors.green : Colors.orange)
+                                    .withValues(alpha: 0.9),
                             colorText: Colors.white,
                           );
                         },
@@ -576,9 +597,9 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                               final isPending = controller.isPathPendingCopy(
                                 folder.path,
                               );
-                              final isCurrentCopying =
-                                  controller.currentCopyingPath.value ==
-                                  folder.path;
+                              final isCurrentCopying = controller
+                                  .activeCopyingPaths
+                                  .contains(folder.path);
 
                               return DragTarget<FileSystemEntity>(
                                 onWillAcceptWithDetails: (details) {
@@ -727,8 +748,9 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
             final status = controller.getItemStatus(file);
             final selected = controller.isFileSelected(file.path);
             final isPending = controller.isPathPendingCopy(file.path);
-            final isCurrentCopying =
-                controller.currentCopyingPath.value == file.path;
+            final isCurrentCopying = controller.activeCopyingPaths.contains(
+              file.path,
+            );
 
             // Format size
             String sizeStr = '-';
